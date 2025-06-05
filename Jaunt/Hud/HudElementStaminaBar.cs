@@ -73,9 +73,9 @@ namespace Jaunt.Hud
 
         private void UpdateStamina()
         {
-            if (capi.World.Player.Entity?.MountedOn?.Entity is not EntityAgent equus) return;
+            if (capi.World.Player.Entity?.MountedOn?.Entity is not EntityAgent ea) return;
 
-            var staminaTree = equus.WatchedAttributes.GetTreeAttribute($"{ModSystem.ModId}:stamina");
+            var staminaTree = ea.WatchedAttributes.GetTreeAttribute($"{ModSystem.ModId}:stamina");
             if (staminaTree == null) return;
 
             if (_statbar == null) return;
@@ -185,10 +185,10 @@ namespace Jaunt.Hud
         public override void OnRenderGUI(float deltaTime)
         {
             if (!JauntConfig.Config.EnableStamina) return;
-            if (capi.World.Player.Entity?.MountedOn?.Entity is not EntityAgent equus) return;
-            if (equus.HasBehavior<EntityBehaviorJauntStamina>() == false) return;
+            if (capi.World.Player.Entity?.MountedOn?.Entity is not EntityAgent ea) return;
+            if (ea.HasBehavior<EntityBehaviorJauntStamina>() == false) return;
 
-            var staminaTree = equus.WatchedAttributes.GetTreeAttribute($"{ModSystem.ModId}:stamina");
+            var staminaTree = ea.WatchedAttributes.GetTreeAttribute($"{ModSystem.ModId}:stamina");
             if (staminaTree == null) return;
 
             var stamina = staminaTree.GetFloat("currentstamina");

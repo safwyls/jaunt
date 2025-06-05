@@ -35,7 +35,7 @@ namespace Jaunt.Behaviors
         protected bool lastSprintPressed = false;
         private float timeSinceLastLog = 0;
         private float timeSinceLastGaitCheck = 0;
-        internal int minGeneration = 0; // Minimum generation for the equus to be rideable
+        internal int minGeneration = 0; // Minimum generation for the animal to be rideable
 
         ControlMeta curControlMeta = null;
         bool shouldMove = false;
@@ -79,7 +79,7 @@ namespace Jaunt.Behaviors
 
         public override void Initialize(EntityProperties properties, JsonObject attributes)
         {
-            if (DebugMode) ModSystem.Logger.Notification(Lang.Get("equus:debug-rideable-init", entity.EntityId));
+            if (DebugMode) ModSystem.Logger.Notification(Lang.Get("jaunt:debug-rideable-init", entity.EntityId));
 
             base.Initialize(properties, attributes);
 

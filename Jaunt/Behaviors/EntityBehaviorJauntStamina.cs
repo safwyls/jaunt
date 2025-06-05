@@ -167,7 +167,7 @@ namespace Jaunt.Behaviors
 
         public override void Initialize(EntityProperties properties, JsonObject typeAttributes)
         {
-            if (DebugMode) ModSystem.Logger.Notification(Lang.Get("equus:debug-stamina-init", entity.EntityId));
+            if (DebugMode) ModSystem.Logger.Notification(Lang.Get("jaunt:debug-stamina-init", entity.EntityId));
 
             // Initialize common fatigue sources
             SprintFatigueSource = new()
@@ -333,9 +333,9 @@ namespace Jaunt.Behaviors
 
             if (capi.World.Player?.WorldData?.CurrentGameMode == EnumGameMode.Creative || capi.Settings.Bool["extendedDebugInfo"])
             {
-                infotext.AppendLine(Lang.Get("equus:infotext-stamina-state", Stamina, AdjustedMaxStamina));
-                infotext.AppendLine(Lang.Get("equus:infotext-stamina-sprint-fatigue", SprintFatigue));
-                infotext.AppendLine(Lang.Get("equus:infotext-stamina-swim-fatigue", SwimFatigue));
+                infotext.AppendLine(Lang.Get("jaunt:infotext-stamina-state", Stamina, AdjustedMaxStamina));
+                infotext.AppendLine(Lang.Get("jaunt:infotext-stamina-sprint-fatigue", SprintFatigue));
+                infotext.AppendLine(Lang.Get("jaunt:infotext-stamina-swim-fatigue", SwimFatigue));
             }
         }
 

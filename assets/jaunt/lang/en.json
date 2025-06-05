@@ -1,6 +1,6 @@
 {
-  "debug-stamina-init": "[Equus] Initializing stamina behavior for entity {0}",
-  "debug-rideable-init": "[Equus] Initializing rideable behavior for entity {0}",
+  "debug-stamina-init": "[Jaunt] Initializing stamina behavior for entity {0}",
+  "debug-rideable-init": "[Jaunt] Initializing rideable behavior for entity {0}",
 
   "ingame-error-too-wild": "This animal is too wild to ride",
 

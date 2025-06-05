@@ -20,7 +20,7 @@ namespace Jaunt.Behaviors
             if (Entity.WatchedAttributes.GetInt("generation") < ebr.minGeneration && player.Player.WorldData.CurrentGameMode != EnumGameMode.Creative)
             {
                 var capi = entityAgent.World.Api as ICoreClientAPI;
-                capi?.TriggerIngameError(this, "toowild", Lang.Get("equus:ingame-error-too-wild"));
+                capi?.TriggerIngameError(this, "toowild", Lang.Get("jaunt:ingame-error-too-wild"));
                 return false;
             }
 
