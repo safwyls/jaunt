@@ -31,7 +31,7 @@ namespace Jaunt.Behaviors
 
         #region Config props
 
-        private static bool DebugMode => JauntConfig.ChildConfig.DebugMode; // Debug mode for logging
+        private static bool DebugMode => JauntConfig.ChildConfig.DebugMode || ModSystem.Config.GlobalDebugMode; // Debug mode for logging
 
         #endregion
 

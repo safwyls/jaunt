@@ -39,6 +39,8 @@
         public float DefaultRegenPenaltyWounded { get; set; } = 0.5f;
         public float DefaultRegenPenaltyMounted { get; set; } = 0.3f;
 
+        public bool GlobalDebugMode { get; set; } = true;
+
         public static IJauntConfig ChildConfig { get; private set; }
 
         public static void RegisterConfig(IJauntConfig config)
