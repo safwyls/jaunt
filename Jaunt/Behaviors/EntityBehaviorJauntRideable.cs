@@ -9,12 +9,10 @@ using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
-using Vintagestory.API.Server;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    // Added enum for gait states
     public enum GaitState
     {
         Walkback, // Special case for walking backwards
@@ -25,43 +23,31 @@ namespace Jaunt.Behaviors
         Gallop
     }
 
+    public class JauntRideableConfig
+    {
+        public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
+        public int MinGeneration { get; set; } = 0; // Minimum generation for the animal to be rideable
+        public string LowStaminaState { get; set; } = "walk"; // Control code for low stamina state
+        public string ModerateStaminaState { get; set; } = "walk"; // Control code for moderate stamina state
+        public string HighStaminaState { get; set; } = "gallop"; // Control code for high stamina state
+    }
+
+    public class JauntControlMeta : ControlMeta
+    {
+        public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
+        public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
+        public AssetLocation Sound { get; set; } // Sound to play when this control is active
+        public AssetLocation Icon { get; set; } // Icon to display for this control
+    }
+
     public class EntityBehaviorJauntRideable : EntityBehaviorRideable
     {
+        #region Properties
+        
+        #region Public
+        
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
-        public float StaminaSpeedMultiplier { get; set; } = 1f;
-        private static bool DebugMode => JauntConfig.ChildConfig.DebugMode; // Debug mode for logging
-
-        protected long lastGaitChangeMs = 0;
-        protected bool lastSprintPressed = false;
-        private float timeSinceLastLog = 0;
-        private float timeSinceLastGaitCheck = 0;
-        internal int minGeneration = 0; // Minimum generation for the animal to be rideable
-        protected new JauntRideableConfig rideableconfig;
-        protected GaitState lowStaminaState;
-        protected GaitState moderateStaminaState;
-        protected GaitState highStaminaState;
-        protected ILoadedSound gaitSound;
-        private string curSoundCode;
-
-        ControlMeta curControlMeta = null;
-        bool shouldMove = false;
-
-        string curTurnAnim = null;
-        EnumControlScheme scheme;
-        EntityBehaviorJauntStamina ebs;
-
-        private static readonly List<GaitState> DefaultGaitOrder = new()
-        {
-            GaitState.Walkback,
-            GaitState.Idle,
-            GaitState.Walk,
-            GaitState.Trot,
-            GaitState.Canter,
-            GaitState.Gallop
-        };
-
         public List<GaitState> AvailableGaits = new();
-
         public GaitState CurrentGait
         {
             get => (GaitState)entity.WatchedAttributes.GetInt("currentgait", (int)GaitState.Walk);
@@ -71,8 +57,53 @@ namespace Jaunt.Behaviors
                 entity.WatchedAttributes.MarkPathDirty(AttributeKey);
             }
         }
+        
+        #endregion Public
 
-        private static string AttributeKey => $"{ModSystem.ModId}:rideable";
+        #region Internal
+        
+        internal int minGeneration = 0; // Minimum generation for the animal to be rideable
+        internal bool prevForwardKey, prevBackwardKey, prevSprintKey;
+        internal bool forward, backward;
+        internal float notOnGroundAccum;
+        internal string prevSoundCode;
+        internal bool shouldMove = false;
+        internal string curTurnAnim = null;
+        internal string curSoundCode = null;
+        internal ControlMeta curControlMeta = null;
+        internal EnumControlScheme scheme;
+        
+        #endregion Internal
+
+        #region Protected
+        
+        protected long lastGaitChangeMs = 0;
+        protected bool lastSprintPressed = false;
+        protected float timeSinceLastLog = 0;
+        protected float timeSinceLastGaitCheck = 0;
+        protected new JauntRideableConfig rideableconfig;
+        protected GaitState lowStaminaState;
+        protected GaitState moderateStaminaState;
+        protected GaitState highStaminaState;
+        protected ILoadedSound gaitSound;
+        protected EntityBehaviorJauntStamina ebs;
+        protected static bool DebugMode => JauntConfig.ChildConfig.DebugMode || ModSystem.Config.GlobalDebugMode; // Debug mode for logging
+        protected static string AttributeKey => $"{ModSystem.ModId}:rideable";
+        protected static readonly List<GaitState> DefaultGaitOrder = new()
+        {
+            GaitState.Walkback,
+            GaitState.Idle,
+            GaitState.Walk,
+            GaitState.Trot,
+            GaitState.Canter,
+            GaitState.Gallop
+        };
+
+        #endregion Protected
+
+        #endregion Properties
+
+        #region Initialization
 
         public EntityBehaviorJauntRideable(Entity entity) : base(entity)
         {
@@ -121,18 +152,22 @@ namespace Jaunt.Behaviors
 
             ebs = eagent.GetBehavior<EntityBehaviorJauntStamina>();
         }
+        
+        #endregion Initialization
 
+        #region AI Task Management
+        
         public override void OnEntityLoaded()
         {
-            setupTaskBlocker();
+            SetupTaskBlocker();
         }
 
         public override void OnEntitySpawn()
         {
-            setupTaskBlocker();
+            SetupTaskBlocker();
         }
 
-        void setupTaskBlocker()
+        internal void SetupTaskBlocker()
         {
             var ebc = entity.GetBehavior<EntityBehaviorAttachable>();
 
@@ -149,18 +184,29 @@ namespace Jaunt.Behaviors
             {
                 if (ebc != null)
                 {
-                    entity.WatchedAttributes.RegisterModifiedListener(ebc.InventoryClassName, updateControlScheme);
+                    entity.WatchedAttributes.RegisterModifiedListener(ebc.InventoryClassName, UpdateControlScheme);
                 }
             }
         }
 
+        private bool TaskManager_OnShouldExecuteTask(IAiTask task)
+        {
+            if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24) return false;
+
+            return !Seats.Any(seat => seat.Passenger != null);
+        }
+        
+        #endregion AI Task Management
+
+        #region Inventory and Control Scheme Management
+        
         private void Inventory_SlotModified(int obj)
         {
-            updateControlScheme();
+            UpdateControlScheme();
             CurrentGait = GaitState.Idle;
         }
 
-        private void updateControlScheme()
+        private void UpdateControlScheme()
         {
             var ebc = entity.GetBehavior<EntityBehaviorAttachable>();
             if (ebc != null)
@@ -178,50 +224,11 @@ namespace Jaunt.Behaviors
                 }
             }
         }
+        
+        #endregion Inventory and Control Scheme Management
 
-        private bool TaskManager_OnShouldExecuteTask(IAiTask task)
-        {
-            if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24) return false;
-
-            return !Seats.Any(seat => seat.Passenger != null);
-        }
-
-        protected virtual void UpdateAngleAndMotion(float dt)
-        {
-            // Ignore lag spikes
-            dt = Math.Min(0.5f, dt);
-
-            float step = GlobalConstants.PhysicsFrameTime;
-            var motion = SeatsToMotion(step);
-
-            if (jumpNow) UpdateRidingState();
-
-            ForwardSpeed = Math.Sign(motion.X);
-
-            float yawMultiplier = CurrentGait switch
-            {
-                GaitState.Idle => rideableconfig.Controls["idle"].TurnRadius,
-                GaitState.Walk => rideableconfig.Controls["walk"].TurnRadius,
-                GaitState.Trot => rideableconfig.Controls["trot"].TurnRadius,
-                GaitState.Canter => rideableconfig.Controls["canter"].TurnRadius,
-                GaitState.Gallop => rideableconfig.Controls["gallop"].TurnRadius,
-                _ => 3.5f
-            };
-
-            AngularVelocity = motion.Y * yawMultiplier;
-
-            entity.SidedPos.Yaw += (float)motion.Y * dt * 30f;
-            entity.SidedPos.Yaw = entity.SidedPos.Yaw % GameMath.TWOPI;
-
-            if (entity.World.ElapsedMilliseconds - lastJumpMs < 2000 && entity.World.ElapsedMilliseconds - lastJumpMs > 200 && entity.OnGround)
-            {
-                eagent.StopAnimation("jump");
-            }
-        }
-
-        bool prevForwardKey, prevBackwardKey, prevSprintKey;
-
-        bool forward, backward;
+        #region Motion Systems
+        
         public override Vec2d SeatsToMotion(float dt)
         {
             int seatsRowing = 0;
@@ -374,7 +381,6 @@ namespace Jaunt.Behaviors
                     prevForwardKey = nowForwards;
                     prevBackwardKey = nowBackwards;
                     #endregion
-
                 }
 
                 #region Motion update
@@ -411,6 +417,40 @@ namespace Jaunt.Behaviors
             return AvailableGaits[nextIndex];
         }
 
+        protected virtual void UpdateAngleAndMotion(float dt)
+        {
+            // Ignore lag spikes
+            dt = Math.Min(0.5f, dt);
+
+            float step = GlobalConstants.PhysicsFrameTime;
+            var motion = SeatsToMotion(step);
+
+            if (jumpNow) UpdateRidingState();
+
+            ForwardSpeed = Math.Sign(motion.X);
+
+            float yawMultiplier = CurrentGait switch
+            {
+                GaitState.Walkback => rideableconfig.Controls["walkback"].TurnRadius,
+                GaitState.Idle => rideableconfig.Controls["idle"].TurnRadius,
+                GaitState.Walk => rideableconfig.Controls["walk"].TurnRadius,
+                GaitState.Trot => rideableconfig.Controls["trot"].TurnRadius,
+                GaitState.Canter => rideableconfig.Controls["canter"].TurnRadius,
+                GaitState.Gallop => rideableconfig.Controls["gallop"].TurnRadius,
+                _ => 3.5f
+            };
+
+            AngularVelocity = motion.Y * yawMultiplier;
+
+            entity.SidedPos.Yaw += (float)motion.Y * dt * 30f;
+            entity.SidedPos.Yaw = entity.SidedPos.Yaw % GameMath.TWOPI;
+
+            if (entity.World.ElapsedMilliseconds - lastJumpMs < 2000 && entity.World.ElapsedMilliseconds - lastJumpMs > 200 && entity.OnGround)
+            {
+                eagent.StopAnimation("jump");
+            }
+        }
+
         protected void UpdateRidingState()
         {
             if (!AnyMounted()) return;
@@ -418,6 +458,7 @@ namespace Jaunt.Behaviors
             bool wasMidJump = IsInMidJump;
             IsInMidJump &= (entity.World.ElapsedMilliseconds - lastJumpMs < 500 || !entity.OnGround) && !entity.Swimming;
 
+            // This is called when jump ends
             if (wasMidJump && !IsInMidJump)
             {
                 var meta = rideableconfig.Controls["jump"];
@@ -520,101 +561,6 @@ namespace Jaunt.Behaviors
             }
         }
 
-        /// <summary>
-        /// Check for stamina triggered changes to gait
-        /// </summary>
-        /// <param name="dt">tick time</param>
-        public void StaminaGaitCheck(float dt)
-        {
-            if (api.Side != EnumAppSide.Server || ebs == null) return;
-
-            timeSinceLastGaitCheck += dt;
-
-            // Check once a second
-            if (timeSinceLastGaitCheck >= 1f)
-            {
-                if (CurrentGait == highStaminaState && !eagent.Swimming)
-                {
-                    bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
-
-                    if (isTired)
-                    {
-                        CurrentGait = ebs.Stamina < 10 ? lowStaminaState : moderateStaminaState;
-                    }
-                    else
-                    {
-                        CurrentGait = highStaminaState;
-                    }
-                }
-
-                timeSinceLastGaitCheck = 0;
-            }
-        }
-
-        /// <summary>
-        /// Returns a value on a quadratic curve as stamina drops below 50%
-        /// </summary>
-        /// <param name="currentStamina"></param>
-        /// <param name="maxStamina"></param>
-        /// <returns></returns>
-        public static float GetStaminaDeficitMultiplier(float currentStamina, float maxStamina)
-        {
-            float midpoint = maxStamina * 0.5f;
-
-            if (currentStamina >= midpoint)
-                return 0f;
-
-            float deficit = 1f - (currentStamina / midpoint);  // 0 at midpoint, 1 at 0 stamina
-            return deficit * deficit;  // Quadratic curve for gradual increase
-        }
-
-        public new void Stop()
-        {
-            CurrentGait = GaitState.Idle;
-            eagent.Controls.StopAllMovement();
-            eagent.Controls.WalkVector.Set(0, 0, 0);
-            eagent.Controls.FlyVector.Set(0, 0, 0);
-            shouldMove = false;
-            if (curControlMeta != null && curControlMeta.Animation != "jump")
-            {
-                eagent.StopAnimation(curControlMeta.Animation);
-            }
-            curControlMeta = null;
-            eagent.StartAnimation("idle");
-        }
-
-        public override void OnGameTick(float dt)
-        {
-            timeSinceLastLog += dt;
-
-            if (api.Side == EnumAppSide.Server)
-            {
-                UpdateAngleAndMotion(dt);
-            }
-
-            StaminaGaitCheck(dt);
-
-            UpdateRidingState();
-
-            if (!AnyMounted() && eagent.Controls.TriesToMove && eagent?.MountedOn != null)
-            {
-                eagent.TryUnmount();
-            }
-
-            if (shouldMove)
-            {
-                Move(dt, eagent.Controls, curControlMeta.MoveSpeed);
-            }
-            else
-            {
-                if (entity.Swimming) eagent.Controls.FlyVector.Y = 0.2;
-            }
-
-            UpdateSoundState(dt);
-        }
-
-        float notOnGroundAccum;
-        string prevSoundCode;
         private void UpdateSoundState(float dt)
         {
             if (capi == null) return;
@@ -627,9 +573,19 @@ namespace Jaunt.Behaviors
             if (rideableconfig.Controls.ContainsKey(CurrentGait.ToString().ToLowerInvariant()))
             {
                 var controlMeta = rideableconfig.Controls[CurrentGait.ToString().ToLowerInvariant()];
+
+                if (entity.Swimming)
+                {
+                    controlMeta = rideableconfig.Controls["swim"];
+                }
+                else if (notOnGroundAccum > 0.2f)
+                {
+                    controlMeta = rideableconfig.Controls["jump"];
+                }
+
                 curSoundCode = controlMeta.Sound;
 
-                bool nowChange = curSoundCode != prevSoundCode && notOnGroundAccum < 0.2;
+                bool nowChange = curSoundCode != prevSoundCode;
 
                 if (nowChange)
                 {
@@ -647,7 +603,7 @@ namespace Jaunt.Behaviors
                     });
 
                     gaitSound?.Start();
-                    ModSystem.Logger.Notification($"Now playing sound: {controlMeta.Sound}");
+                    if (DebugMode) ModSystem.Logger.Notification($"Now playing sound: {controlMeta.Sound}");
                 }
             }
         }
@@ -679,8 +635,9 @@ namespace Jaunt.Behaviors
                 controls.FlyVector.Set(controls.WalkVector);
 
                 Vec3d pos = entity.Pos.XYZ;
-                Block inblock = entity.World.BlockAccessor.GetBlock((int)pos.X, (int)(pos.Y), (int)pos.Z, BlockLayersAccess.Fluid);
-                Block aboveblock = entity.World.BlockAccessor.GetBlock((int)pos.X, (int)(pos.Y + 1), (int)pos.Z, BlockLayersAccess.Fluid);
+                Vec3d posAbove = new(pos.X, pos.Y + 1.0, pos.Z);
+                Block inblock = entity.World.BlockAccessor.GetBlock(pos.AsBlockPos, BlockLayersAccess.Fluid);
+                Block aboveblock = entity.World.BlockAccessor.GetBlock(posAbove.AsBlockPos, BlockLayersAccess.Fluid);
                 float waterY = (int)pos.Y + inblock.LiquidLevel / 8f + (aboveblock.IsLiquid() ? 9 / 8f : 0);
                 float bottomSubmergedness = waterY - (float)pos.Y;
 
@@ -698,6 +655,25 @@ namespace Jaunt.Behaviors
                 eagent.Pos.Motion.Y += (swimlineSubmergedness - 0.1) / 300.0;
             }
         }
+
+        public new void Stop()
+        {
+            CurrentGait = GaitState.Idle;
+            eagent.Controls.StopAllMovement();
+            eagent.Controls.WalkVector.Set(0, 0, 0);
+            eagent.Controls.FlyVector.Set(0, 0, 0);
+            shouldMove = false;
+            if (curControlMeta != null && curControlMeta.Animation != "jump")
+            {
+                eagent.StopAnimation(curControlMeta.Animation);
+            }
+            curControlMeta = null;
+            eagent.StartAnimation("idle");
+        }
+        
+        #endregion Motion Systems
+
+        #region Utility Methods
 
         public new void DidUnnmount(EntityAgent entityAgent)
         {
@@ -720,25 +696,82 @@ namespace Jaunt.Behaviors
 
         public new void DidMount(EntityAgent entityAgent)
         {
-            updateControlScheme();
+            UpdateControlScheme();
             CurrentGait = GaitState.Idle;
         }
-    }
 
-    public class JauntRideableConfig
-    {
-        public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
-        public int MinGeneration { get; set; } = 0; // Minimum generation for the animal to be rideable
-        public string LowStaminaState { get; set; } = "walk"; // Control code for low stamina state
-        public string ModerateStaminaState { get; set; } = "walk"; // Control code for moderate stamina state
-        public string HighStaminaState { get; set; } = "gallop"; // Control code for high stamina state
-    }
+        public void StaminaGaitCheck(float dt)
+        {
+            if (api.Side != EnumAppSide.Server || ebs == null) return;
 
-    public class JauntControlMeta : ControlMeta
-    {
-        public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
-        public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
-        public AssetLocation Sound { get; set; } // Sound to play when this control is active
-        public AssetLocation Icon { get; set; } // Icon to display for this control
+            timeSinceLastGaitCheck += dt;
+
+            // Check once a second
+            if (timeSinceLastGaitCheck >= 1f)
+            {
+                if (CurrentGait == highStaminaState && !eagent.Swimming)
+                {
+                    bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
+
+                    if (isTired)
+                    {
+                        CurrentGait = ebs.Stamina < 10 ? lowStaminaState : moderateStaminaState;
+                    }
+                    else
+                    {
+                        CurrentGait = highStaminaState;
+                    }
+                }
+
+                timeSinceLastGaitCheck = 0;
+            }
+        }
+
+        public static float GetStaminaDeficitMultiplier(float currentStamina, float maxStamina)
+        {
+            float midpoint = maxStamina * 0.5f;
+
+            if (currentStamina >= midpoint)
+                return 0f;
+
+            float deficit = 1f - (currentStamina / midpoint);  // 0 at midpoint, 1 at 0 stamina
+            return deficit * deficit;  // Quadratic curve for gradual increase
+        }
+
+        #endregion Utility Methods
+
+        #region Listeners
+        
+        public override void OnGameTick(float dt)
+        {
+            timeSinceLastLog += dt;
+
+            if (api.Side == EnumAppSide.Server)
+            {
+                UpdateAngleAndMotion(dt);
+            }
+
+            StaminaGaitCheck(dt);
+
+            UpdateRidingState();
+
+            if (!AnyMounted() && eagent.Controls.TriesToMove && eagent?.MountedOn != null)
+            {
+                eagent.TryUnmount();
+            }
+
+            if (shouldMove)
+            {
+                Move(dt, eagent.Controls, curControlMeta.MoveSpeed);
+            }
+            else
+            {
+                if (entity.Swimming) eagent.Controls.FlyVector.Y = 0.2;
+            }
+
+            UpdateSoundState(dt);
+        }
+
+        #endregion Listeners
     }
 }
