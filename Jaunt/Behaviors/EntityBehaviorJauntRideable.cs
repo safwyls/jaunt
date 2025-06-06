@@ -1,4 +1,5 @@
-﻿using Jaunt.Config;
+﻿using Cairo;
+using Jaunt.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,6 +49,7 @@ namespace Jaunt.Behaviors
         
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         public List<GaitState> AvailableGaits = new();
+        public FastSmallDictionary<string, LoadedTexture> texturesDict;
         public GaitState CurrentGait
         {
             get => (GaitState)entity.WatchedAttributes.GetInt("currentgait", (int)GaitState.Walk);
@@ -57,11 +59,11 @@ namespace Jaunt.Behaviors
                 entity.WatchedAttributes.MarkPathDirty(AttributeKey);
             }
         }
-        
+
         #endregion Public
 
         #region Internal
-        
+
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
         internal bool prevForwardKey, prevBackwardKey, prevSprintKey;
         internal bool forward, backward;
@@ -117,6 +119,9 @@ namespace Jaunt.Behaviors
 
         public override void Initialize(EntityProperties properties, JsonObject attributes)
         {
+            api = entity.Api;
+            capi = api as ICoreClientAPI;
+
             if (DebugMode) ModSystem.Logger.Notification(Lang.Get("jaunt:debug-rideable-init", entity.EntityId));
 
             base.Initialize(properties, attributes);
@@ -139,11 +144,39 @@ namespace Jaunt.Behaviors
 
             foreach (var val in rideableconfig.Controls.Values) { val.RiderAnim?.Init(); }
 
-            api = entity.Api;
-            capi = api as ICoreClientAPI;
             curAnim = rideableconfig.Controls["idle"].RiderAnim;
 
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
+
+            // Fetch custom gait icons
+            if (api is ICoreClientAPI)
+            {
+                List<AssetLocation> assetLocations = rideableconfig.Controls.Values
+                    .Where(c => c.Icon is not null)
+                    .Select(c => c.Icon)
+                    .ToList();
+
+                texturesDict = new(assetLocations.Count);
+
+                foreach (var asset in assetLocations)
+                {
+                    LoadedTexture texture = new(capi);
+
+                    string name = asset.GetName().Split('.')[0]; // Get the name without extension
+
+                    capi.Render.GetOrLoadTexture(asset, ref texture);
+                    texturesDict.Add(name, texture);
+                }
+
+                // Generate empty texture.
+                LoadedTexture empty = new(this.capi);
+                ImageSurface surface = new ImageSurface(Format.Argb32, (int)JauntConfig.ChildConfig.IconSize, (int)JauntConfig.ChildConfig.IconSize);
+
+                this.capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
+                surface.Dispose();
+
+                texturesDict.Add("empty", empty);
+            }
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -773,5 +806,19 @@ namespace Jaunt.Behaviors
         }
 
         #endregion Listeners
+
+        #region Disposal
+        
+        public new void Dispose()
+        {
+            base.Dispose();
+
+            foreach (var texture in texturesDict.Values)
+            {
+                texture.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

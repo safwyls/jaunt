@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Hud
@@ -13,7 +14,7 @@ namespace Jaunt.Hud
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         private ICoreClientAPI capi;
-        private Dictionary<string, LoadedTexture> texturesDict = new();
+        private FastSmallDictionary<string, LoadedTexture> texturesDict = new(5);
         private LoadedTexture activeTexture;
         private long listenerId;
         public double RenderOrder => 1;
@@ -76,13 +77,13 @@ namespace Jaunt.Hud
             {
                 activeTexture = ebr.CurrentGait switch
                 {
-                    GaitState.Walkback => texturesDict["walk"] ?? texturesDict["empty"],
-                    GaitState.Idle => texturesDict["walk"] ?? texturesDict["empty"],
-                    GaitState.Walk => texturesDict["walk"] ?? texturesDict["empty"],
-                    GaitState.Trot => texturesDict["trot"] ?? texturesDict["empty"],
-                    GaitState.Canter => texturesDict["canter"] ?? texturesDict["empty"],
-                    GaitState.Gallop => texturesDict["gallop"] ?? texturesDict["empty"],
-                    _ => texturesDict["empty"]
+                    GaitState.Walkback => ebr.texturesDict.TryGetValue("walkback", out LoadedTexture t) ? t : texturesDict["walkback"],
+                    GaitState.Idle => ebr.texturesDict.TryGetValue("idle", out LoadedTexture t) ? t : texturesDict["idle"],
+                    GaitState.Walk => ebr.texturesDict.TryGetValue("walk", out LoadedTexture t) ? t : texturesDict["walk"],
+                    GaitState.Trot => ebr.texturesDict.TryGetValue("trot", out LoadedTexture t) ? t : texturesDict["trot"],
+                    GaitState.Canter => ebr.texturesDict.TryGetValue("canter", out LoadedTexture t) ? t : texturesDict["canter"],
+                    GaitState.Gallop => ebr.texturesDict.TryGetValue("gallop", out LoadedTexture t) ? t : texturesDict["gallop"],
+                    _ => texturesDict["empty"]  
                 };
             }
             else
