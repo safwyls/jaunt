@@ -6,7 +6,6 @@ using System;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
-using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 using Vintagestory.Client.NoObf;
 
@@ -25,7 +24,6 @@ namespace Jaunt
         public JauntConfig Config { get; private set; }
         public static JauntModSystem Instance { get; private set; }
 
-        // Called on server and client
         public override void Start(ICoreAPI api)
         {
             Instance = this;
@@ -34,7 +32,7 @@ namespace Jaunt
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
 
-            ReloadConfig(api, false);
+            ReloadConfig(api);
         }
 
         public override void StartServerSide(ICoreServerAPI api)
@@ -106,7 +104,7 @@ namespace Jaunt
             return fatigue;
         }
 
-        public void ReloadConfig(ICoreAPI api, bool isReload)
+        public void ReloadConfig(ICoreAPI api)
         {
             try
             {
@@ -118,22 +116,11 @@ namespace Jaunt
                 {
                     Logger.Warning("Missing config! Using default.");
                     Config = new JauntConfig();
+                    api.StoreModConfig(Config, $"{ModId}.json");
                 }
                 else
                 {
                     Config = _config;
-                }
-
-                if (isReload)
-                {
-                    // Update stats
-                    // ToDo: Figure out how to update stats on reload
-                }
-                else
-                {
-                    // Only do this if we are not actively reloading
-                    // Store config again (to ensure any new props are saved)
-                    api.StoreModConfig(Config, $"{ModId}.json");
                 }
             }
             catch (Exception ex)
