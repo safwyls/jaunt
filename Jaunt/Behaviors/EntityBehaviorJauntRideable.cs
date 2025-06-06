@@ -40,6 +40,8 @@ namespace Jaunt.Behaviors
         protected GaitState lowStaminaState;
         protected GaitState moderateStaminaState;
         protected GaitState highStaminaState;
+        protected ILoadedSound gaitSound;
+        private string curSoundCode;
 
         ControlMeta curControlMeta = null;
         bool shouldMove = false;
@@ -510,7 +512,7 @@ namespace Jaunt.Behaviors
             }
 
             // If entity has stamina let it know youre currently sprinting
-            if (ebs is not null) ebs.Sprinting = CurrentGait == high;
+            if (ebs is not null) ebs.Sprinting = CurrentGait == highStaminaState;
 
             if (api.Side == EnumAppSide.Server)
             {
@@ -612,6 +614,7 @@ namespace Jaunt.Behaviors
         }
 
         float notOnGroundAccum;
+        string prevSoundCode;
         private void UpdateSoundState(float dt)
         {
             if (capi == null) return;
@@ -619,58 +622,32 @@ namespace Jaunt.Behaviors
             if (eagent.OnGround) notOnGroundAccum = 0;
             else notOnGroundAccum += dt;
 
-            bool nowtrot = shouldMove && CurrentGait != GaitState.Gallop && notOnGroundAccum < 0.2;
-            bool nowgallop = shouldMove && CurrentGait == GaitState.Gallop && notOnGroundAccum < 0.2;
+            gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            bool wastrot = trotSound != null && trotSound.IsPlaying;
-            bool wasgallop = gallopSound != null && gallopSound.IsPlaying;
-
-            trotSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
-            gallopSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
-
-            if (nowtrot != wastrot)
+            if (rideableconfig.Controls.ContainsKey(CurrentGait.ToString().ToLowerInvariant()))
             {
-                if (nowtrot)
+                var controlMeta = rideableconfig.Controls[CurrentGait.ToString().ToLowerInvariant()];
+                curSoundCode = controlMeta.Sound;
+
+                bool nowChange = curSoundCode != prevSoundCode && notOnGroundAccum < 0.2;
+
+                if (nowChange)
                 {
-                    if (trotSound == null)
+                    gaitSound?.Stop();
+                    prevSoundCode = curSoundCode;
+
+                    if (curSoundCode is null) return;
+
+                    gaitSound = capi.World.LoadSound(new SoundParams()
                     {
-                        trotSound = capi.World.LoadSound(new SoundParams()
-                        {
-                            Location = new AssetLocation("sounds/creature/hooved/trot"),
-                            DisposeOnFinish = false,
-                            Position = entity.Pos.XYZ.ToVec3f(),
-                            ShouldLoop = true,
-                        });
-                    }
+                        Location = controlMeta.Sound,
+                        DisposeOnFinish = false,
+                        Position = entity.Pos.XYZ.ToVec3f(),
+                        ShouldLoop = true
+                    });
 
-                    trotSound.Start();
-
-                }
-                else
-                {
-                    trotSound.Stop();
-                }
-            }
-
-            if (nowgallop != wasgallop)
-            {
-                if (nowgallop)
-                {
-                    if (gallopSound == null)
-                    {
-                        gallopSound = capi.World.LoadSound(new SoundParams()
-                        {
-                            Location = new AssetLocation("sounds/creature/hooved/gallop"),
-                            DisposeOnFinish = false,
-                            Position = entity.Pos.XYZ.ToVec3f(),
-                            ShouldLoop = true,
-                        });
-                    }
-                    gallopSound.Start();
-                }
-                else
-                {
-                    gallopSound.Stop();
+                    gaitSound?.Start();
+                    ModSystem.Logger.Notification($"Now playing sound: {controlMeta.Sound}");
                 }
             }
         }
