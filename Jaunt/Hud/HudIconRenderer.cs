@@ -40,7 +40,7 @@ namespace Jaunt.Hud
 
             // Generate empty texture.
             LoadedTexture empty = new(this.capi);
-            ImageSurface surface = new ImageSurface(Format.Argb32, (int)JauntConfig.Config.IconSize, (int)JauntConfig.Config.IconSize);
+            ImageSurface surface = new ImageSurface(Format.Argb32, (int)JauntConfig.ChildConfig.IconSize, (int)JauntConfig.ChildConfig.IconSize);
 
             this.capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
             surface.Dispose();
@@ -52,18 +52,18 @@ namespace Jaunt.Hud
 
         private bool CanRender()
         {
-            return JauntConfig.Config.ShowHudIcon == true && activeTexture != null;
+            return JauntConfig.ChildConfig.ShowGaitIcon == true && activeTexture != null;
         }
 
         public void OnRenderFrame(float dt, EnumRenderStage stage)
         {
             if (!CanRender()) return;
 
-            float width = (float)GuiElement.scaled(JauntConfig.Config.IconSize);
-            float height = (float)GuiElement.scaled(JauntConfig.Config.IconSize);
+            float width = (float)GuiElement.scaled(JauntConfig.ChildConfig.IconSize);
+            float height = (float)GuiElement.scaled(JauntConfig.ChildConfig.IconSize);
 
-            float x = (capi.Render.FrameWidth / 2) - (width / 2) + (float)GuiElement.scaled(JauntConfig.Config.IconOffsetX);
-            float y = (capi.Render.FrameHeight - height) + (float)GuiElement.scaled(JauntConfig.Config.IconOffsetY);
+            float x = (capi.Render.FrameWidth / 2) - (width / 2) + (float)GuiElement.scaled(JauntConfig.ChildConfig.IconOffsetX);
+            float y = (capi.Render.FrameHeight - height) + (float)GuiElement.scaled(JauntConfig.ChildConfig.IconOffsetY);
 
             capi.Render.RenderTexture(activeTexture.TextureId, x, y, width, height);
         }
@@ -76,12 +76,12 @@ namespace Jaunt.Hud
             {
                 activeTexture = ebr.CurrentGait switch
                 {
-                    GaitState.Walkback => texturesDict["walk"],
-                    GaitState.Idle => texturesDict["walk"],
-                    GaitState.Walk => texturesDict["walk"],
-                    GaitState.Trot => texturesDict["trot"],
-                    GaitState.Canter => texturesDict["canter"],
-                    GaitState.Gallop => texturesDict["gallop"],
+                    GaitState.Walkback => texturesDict["walk"] ?? texturesDict["empty"],
+                    GaitState.Idle => texturesDict["walk"] ?? texturesDict["empty"],
+                    GaitState.Walk => texturesDict["walk"] ?? texturesDict["empty"],
+                    GaitState.Trot => texturesDict["trot"] ?? texturesDict["empty"],
+                    GaitState.Canter => texturesDict["canter"] ?? texturesDict["empty"],
+                    GaitState.Gallop => texturesDict["gallop"] ?? texturesDict["empty"],
                     _ => texturesDict["empty"]
                 };
             }

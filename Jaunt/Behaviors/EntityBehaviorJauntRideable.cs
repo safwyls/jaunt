@@ -29,13 +29,17 @@ namespace Jaunt.Behaviors
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         public float StaminaSpeedMultiplier { get; set; } = 1f;
-        private static bool DebugMode => JauntConfig.Config.DebugMode; // Debug mode for logging
+        private static bool DebugMode => JauntConfig.ChildConfig.DebugMode; // Debug mode for logging
 
         protected long lastGaitChangeMs = 0;
         protected bool lastSprintPressed = false;
         private float timeSinceLastLog = 0;
         private float timeSinceLastGaitCheck = 0;
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
+        protected new JauntRideableConfig rideableconfig;
+        protected GaitState lowStaminaState;
+        protected GaitState moderateStaminaState;
+        protected GaitState highStaminaState;
 
         ControlMeta curControlMeta = null;
         bool shouldMove = false;
@@ -46,6 +50,7 @@ namespace Jaunt.Behaviors
 
         private static readonly List<GaitState> DefaultGaitOrder = new()
         {
+            GaitState.Walkback,
             GaitState.Idle,
             GaitState.Walk,
             GaitState.Trot,
@@ -83,8 +88,12 @@ namespace Jaunt.Behaviors
 
             base.Initialize(properties, attributes);
 
-            rideableconfig = attributes.AsObject<RideableConfig>();
+            rideableconfig = attributes.AsObject<JauntRideableConfig>();
             minGeneration = rideableconfig.MinGeneration;
+
+            lowStaminaState = Enum.TryParse<GaitState>(rideableconfig.LowStaminaState, out var lowStamina) ? lowStamina : GaitState.Walk;
+            moderateStaminaState = Enum.TryParse<GaitState>(rideableconfig.ModerateStaminaState, out var moderateStamina) ? moderateStamina : GaitState.Walk;
+            highStaminaState = Enum.TryParse<GaitState>(rideableconfig.HighStaminaState, out var highStamina) ? highStamina : GaitState.Gallop;
 
             AvailableGaits.Clear();
             foreach (var gait in DefaultGaitOrder)
@@ -146,6 +155,7 @@ namespace Jaunt.Behaviors
         private void Inventory_SlotModified(int obj)
         {
             updateControlScheme();
+            CurrentGait = GaitState.Idle;
         }
 
         private void updateControlScheme()
@@ -182,20 +192,17 @@ namespace Jaunt.Behaviors
             float step = GlobalConstants.PhysicsFrameTime;
             var motion = SeatsToMotion(step);
 
-            if (jumpNow)
-            {
-                UpdateRidingState();
-            }
+            if (jumpNow) UpdateRidingState();
 
             ForwardSpeed = Math.Sign(motion.X);
 
             float yawMultiplier = CurrentGait switch
             {
-                GaitState.Idle => 4f,
-                GaitState.Walk => 3.5f,
-                GaitState.Trot => 3f,
-                GaitState.Canter => 2f,
-                GaitState.Gallop => 1.5f,
+                GaitState.Idle => rideableconfig.Controls["idle"].TurnRadius,
+                GaitState.Walk => rideableconfig.Controls["walk"].TurnRadius,
+                GaitState.Trot => rideableconfig.Controls["trot"].TurnRadius,
+                GaitState.Canter => rideableconfig.Controls["canter"].TurnRadius,
+                GaitState.Gallop => rideableconfig.Controls["gallop"].TurnRadius,
                 _ => 3.5f
             };
 
@@ -313,44 +320,19 @@ namespace Jaunt.Behaviors
                 long nowMs = entity.World.ElapsedMilliseconds;
 
                 #region Common controls across both schemes
+                // This ensures we start moving without having to press sprint
                 if (forwardPressed && CurrentGait == GaitState.Idle) CurrentGait = GaitState.Walk;
 
                 if (forward && sprintPressed && nowMs - lastGaitChangeMs > 300)
                 {
-                    CurrentGait = CurrentGait switch
-                    {
-                        GaitState.Walk => GaitState.Trot,
-                        GaitState.Trot => GaitState.Canter,
-                        GaitState.Canter => GaitState.Gallop,
-                        GaitState.Gallop => GaitState.Canter,
-                        _ => GaitState.Idle
-                    };
+                    CurrentGait = GetNextGait(CurrentGait, true);
 
                     lastGaitChangeMs = nowMs;
                 }
 
                 if (backwardPressed && nowMs - lastGaitChangeMs > 300)
                 {
-                    switch (CurrentGait)
-                    {
-                        case GaitState.Gallop:
-                            CurrentGait = GaitState.Canter;
-                            break;
-                        case GaitState.Canter:
-                            CurrentGait = GaitState.Trot;
-                            break;
-                        case GaitState.Trot:
-                            CurrentGait = GaitState.Walk;
-                            break;
-                        case GaitState.Walk:
-                            forward = false;
-                            CurrentGait = GaitState.Idle;
-                            break;
-                        case GaitState.Idle:
-                            backward = true;
-                            CurrentGait = GaitState.Walkback;
-                            break;
-                    }
+                    CurrentGait = GetNextGait(CurrentGait, false);
 
                     lastGaitChangeMs = nowMs;
                 }
@@ -367,18 +349,24 @@ namespace Jaunt.Behaviors
                 }
                 else
                 {
-                    #region Curb bit controls (Press scheme)
-                    // Transition from idle to forward
-                    if (!forward && !backward && forwardPressed)
+                    #region Curb bit controls (Press scheme)                    
+                    // Handle backward to idle change without sprint key
+                    if (forwardPressed && CurrentGait == GaitState.Walkback) CurrentGait = GaitState.Idle;
+
+                    switch (CurrentGait)
                     {
-                        forward = true;
-                        CurrentGait = GaitState.Walk;
-                    }
-                    // Switch from backward to idle
-                    else if (backward && forwardPressed)
-                    {
-                        backward = false;
-                        CurrentGait = GaitState.Idle;
+                        case GaitState.Walkback:
+                            backward = true;
+                            forward = false;
+                            break;
+                        case GaitState.Idle:
+                            backward = false;
+                            forward = false;
+                            break;
+                        default:
+                            backward = false;
+                            forward = true;
+                            break;
                     }
 
                     prevForwardKey = nowForwards;
@@ -404,6 +392,23 @@ namespace Jaunt.Behaviors
             return new Vec2d(linearMotion, angularMotion);
         }
 
+        protected GaitState GetNextGait(GaitState currentGait, bool forward)
+        {
+            if (AvailableGaits == null || AvailableGaits.Count == 0)
+                return GaitState.Idle;
+
+            int currentIndex = AvailableGaits.IndexOf(currentGait);
+            if (currentIndex < 0) return GaitState.Idle;
+
+            int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+
+            // Boundary behavior
+            if (nextIndex < 0) nextIndex = 0;
+            if (nextIndex >= AvailableGaits.Count) nextIndex = currentIndex - 1;
+
+            return AvailableGaits[nextIndex];
+        }
+
         protected void UpdateRidingState()
         {
             if (!AnyMounted()) return;
@@ -420,7 +425,7 @@ namespace Jaunt.Behaviors
 
             eagent.Controls.Backward = ForwardSpeed < 0;
             eagent.Controls.Forward = ForwardSpeed >= 0;
-            eagent.Controls.Sprint = CurrentGait == GaitState.Gallop && ForwardSpeed > 0;
+            eagent.Controls.Sprint = CurrentGait == highStaminaState && ForwardSpeed > 0;
 
             string nowTurnAnim = null;
             if (ForwardSpeed >= 0)
@@ -462,7 +467,7 @@ namespace Jaunt.Behaviors
                         controlCode = "canter";
                         break;
                     case GaitState.Gallop:
-                        controlCode = "sprint";
+                        controlCode = "gallop";
                         break;
                 }
 
@@ -505,7 +510,7 @@ namespace Jaunt.Behaviors
             }
 
             // If entity has stamina let it know youre currently sprinting
-            if (ebs is not null) ebs.Sprinting = CurrentGait == GaitState.Gallop;
+            if (ebs is not null) ebs.Sprinting = CurrentGait == high;
 
             if (api.Side == EnumAppSide.Server)
             {
@@ -526,17 +531,17 @@ namespace Jaunt.Behaviors
             // Check once a second
             if (timeSinceLastGaitCheck >= 1f)
             {
-                if (CurrentGait == GaitState.Gallop && !eagent.Swimming)
+                if (CurrentGait == highStaminaState && !eagent.Swimming)
                 {
                     bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
 
                     if (isTired)
                     {
-                        CurrentGait = ebs.Stamina < 10 ? GaitState.Trot : GaitState.Canter;
+                        CurrentGait = ebs.Stamina < 10 ? lowStaminaState : moderateStaminaState;
                     }
                     else
                     {
-                        CurrentGait = GaitState.Gallop;
+                        CurrentGait = highStaminaState;
                     }
                 }
 
@@ -559,27 +564,6 @@ namespace Jaunt.Behaviors
 
             float deficit = 1f - (currentStamina / midpoint);  // 0 at midpoint, 1 at 0 stamina
             return deficit * deficit;  // Quadratic curve for gradual increase
-        }
-
-        public void DismountViolently()
-        {
-            var meta = rideableconfig.Controls["sprint"];
-            bool unmounted = false;
-            foreach (var seat in Seats)
-            {
-                EntityPlayer rider = seat.Passenger as EntityPlayer;
-                if (rider is null) return;
-
-                seat.DoTeleportOnUnmount = false;
-                unmounted = rider.TryUnmount();
-                rider?.AnimManager?.StopAnimation(meta.RiderAnim.Animation);
-                rider?.AnimManager?.StartAnimation("knockbackland");
-            }
-
-            if (unmounted)
-            {
-                Stop();
-            }
         }
 
         public new void Stop()
@@ -764,10 +748,20 @@ namespace Jaunt.Behaviors
         }
     }
 
+    public class JauntRideableConfig
+    {
+        public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
+        public int MinGeneration { get; set; } = 0; // Minimum generation for the animal to be rideable
+        public string LowStaminaState { get; set; } = "walk"; // Control code for low stamina state
+        public string ModerateStaminaState { get; set; } = "walk"; // Control code for moderate stamina state
+        public string HighStaminaState { get; set; } = "gallop"; // Control code for high stamina state
+    }
+
     public class JauntControlMeta : ControlMeta
     {
         public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
-
+        public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
         public AssetLocation Sound { get; set; } // Sound to play when this control is active
+        public AssetLocation Icon { get; set; } // Icon to display for this control
     }
 }

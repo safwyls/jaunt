@@ -31,7 +31,8 @@ namespace Jaunt.Behaviors
 
         #region Config props
 
-        private static bool DebugMode => JauntConfig.Config.DebugMode; // Debug mode for logging
+        private static bool DebugMode => JauntConfig.ChildConfig.DebugMode; // Debug mode for logging
+
         #endregion
 
         ITreeAttribute StaminaTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
@@ -40,106 +41,66 @@ namespace Jaunt.Behaviors
 
         public bool Exhausted
         {
-            get => StaminaTree?.GetBool("exhausted") ?? false;
-            set
-            {
-                StaminaTree.SetBool("exhausted", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetBool("exhausted");
+            set => StaminaTree.SetBool("exhausted", value);
         }
 
         public float Stamina
         {
-            get => StaminaTree?.GetFloat("currentstamina") ?? 100f;
-            set
-            {
-                StaminaTree.SetFloat("currentstamina", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("currentstamina");
+            set => StaminaTree.SetFloat("currentstamina", value);
         }
 
         public float MaxStamina
         {
-            get => StaminaTree?.GetFloat("maxstamina") ?? 100f;
-            set
-            {
-                StaminaTree.SetFloat("maxstamina", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("maxstamina");
+            set => StaminaTree.SetFloat("maxstamina", value);
         }
 
         public float AdjustedMaxStamina
         {
-            get => MaxStamina * JauntConfig.Config.GlobalMaxStaminaMultiplier;
+            get => MaxStamina * ModSystem.Config.GlobalMaxStaminaMultiplier;
         }
 
         public float SprintFatigue
         {
-            get => StaminaTree?.GetFloat("sprintfatigue") ?? 1f;
-            set
-            {
-                StaminaTree.SetFloat("sprintfatigue", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("sprintfatigue");
+            set => StaminaTree.SetFloat("sprintfatigue", value);
         }
         public float SwimFatigue
         {
-            get => StaminaTree?.GetFloat("swimfatigue") ?? 1f;
-            set
-            {
-                StaminaTree.SetFloat("swimfatigue", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("swimfatigue");
+            set => StaminaTree.SetFloat("swimfatigue", value);
         }
 
         public float BaseFatigueRate
         {
-            get => StaminaTree?.GetFloat("basefatiguerate") ?? 1f;
-            set
-            {
-                StaminaTree.SetFloat("basefatiguerate", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("basefatiguerate");
+            set => StaminaTree.SetFloat("basefatiguerate", value);
         }
 
         public float StaminaRegenRate
         {
-            get => StaminaTree?.GetFloat("staminaregenrate") ?? 1f;
-            set
-            {
-                StaminaTree.SetFloat("staminaregenrate", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("staminaregenrate");
+            set => StaminaTree.SetFloat("staminaregenrate", value);
         }
 
         public float RegenPenaltyWounded
         {
-            get => StaminaTree?.GetFloat("regenpenaltywounded") ?? 0f;
-            set
-            {
-                StaminaTree.SetFloat("regenpenaltywounded", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("regenpenaltywounded");
+            set => StaminaTree.SetFloat("regenpenaltywounded", value);
         }
 
         public float RegenPenaltyMounted
         {
-            get => StaminaTree?.GetFloat("regenpenaltymounted") ?? 0f;
-            set
-            {
-                StaminaTree.SetFloat("regenpenaltymounted", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetFloat("regenpenaltymounted");
+            set => StaminaTree.SetFloat("regenpenaltymounted", value);
         }
 
         public bool Sprinting
         {
-            get => StaminaTree?.GetBool("sprinting") ?? false;
-            set
-            {
-                StaminaTree.SetBool("sprinting", value);
-                MarkDirty();
-            }
+            get => StaminaTree.GetBool("sprinting");
+            set => StaminaTree.SetBool("sprinting", value);
         }
 
         public FatigueSource SprintFatigueSource;
@@ -148,22 +109,6 @@ namespace Jaunt.Behaviors
         public EntityBehaviorJauntStamina(Entity entity) : base(entity) 
         { 
         }
-
-        public void MapAttributes(JsonObject typeAttributes, JsonObject staminaAttributes)
-        {
-            Exhausted = typeAttributes["exhausted"].AsBool(false);
-            MaxStamina = typeAttributes["maxstamina"].AsFloat(staminaAttributes["maxStamina"].AsFloat(100f));
-            Stamina = typeAttributes["currentstamina"].AsFloat(staminaAttributes["maxStamina"].AsFloat(100f));
-            SprintFatigue = typeAttributes["sprintfatigue"].AsFloat(staminaAttributes["sprintfatigue"].AsFloat(0.2f));
-            SwimFatigue = typeAttributes["swimfatigue"].AsFloat(staminaAttributes["swimfatigue"].AsFloat(0.2f));
-            StaminaRegenRate = typeAttributes["staminaregenrate"].AsFloat(staminaAttributes["staminaregenrate"].AsFloat(1f));
-            BaseFatigueRate = typeAttributes["basefatiguerate"].AsFloat(staminaAttributes["basefatiguerate"].AsFloat(1f));
-            RegenPenaltyWounded = typeAttributes["regenpenaltywounded"].AsFloat(staminaAttributes["regenpenaltywounded"].AsFloat(0f));
-            RegenPenaltyMounted = typeAttributes["regenpenaltymounted"].AsFloat(staminaAttributes["regenpenaltymounted"].AsFloat(0f));
-            Sprinting = typeAttributes["sprinting"].AsBool(false);
-            MarkDirty();
-        }
-
 
         public override void Initialize(EntityProperties properties, JsonObject typeAttributes)
         {
@@ -185,14 +130,34 @@ namespace Jaunt.Behaviors
             // Fetch the stamina tree attribute
             var staminaTree = entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
 
-            // Fetch the stamina attributes from the entity properties
-            var staminaAttributes = entity.Properties.Attributes[AttributeKey];
-
             // Initialize stamina tree
-            if (staminaTree == null) entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
+            if (staminaTree == null)
+            {
+                entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
 
-            // Map attributes from entity properties to attribute tree
-            MapAttributes(typeAttributes, staminaAttributes);
+                MaxStamina = typeAttributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
+                // These only get set on new initializations, not on reloads
+                Stamina = typeAttributes["currentstamina"].AsFloat(MaxStamina); // Start with full stamina
+                Sprinting = false; // Not sprinting by default
+            }
+
+            // Refresh stamina config values from json
+            MaxStamina = typeAttributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
+            Stamina = Math.Clamp(Stamina, 0, MaxStamina); // Ensure stamina is in bounds on reload in case max stamina changed
+            SprintFatigue = typeAttributes["sprintfatigue"].AsFloat(ModSystem.Config.DefaultSprintFatigue);
+            SwimFatigue = typeAttributes["swimfatigue"].AsFloat(ModSystem.Config.DefaultSwimFatigue);
+            BaseFatigueRate = typeAttributes["basefatiguerate"].AsFloat(ModSystem.Config.DefaultBaseFatigueRate);
+            StaminaRegenRate = typeAttributes["staminaregenrate"].AsFloat(ModSystem.Config.DefaultStaminaRegenRate);
+            RegenPenaltyWounded = typeAttributes["regenpenaltywounded"].AsFloat(ModSystem.Config.DefaultRegenPenaltyWounded);
+            RegenPenaltyMounted = typeAttributes["regenpenaltymounted"].AsFloat(ModSystem.Config.DefaultRegenPenaltyMounted);
+            MarkDirty();
+
+            if (MaxStamina <= 0)
+            {
+                // If max stamina is not set, use the type attribute value
+                MaxStamina = typeAttributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
+                MarkDirty();
+            }
 
             timeSinceLastUpdate = (float)entity.World.Rand.NextDouble();   // Randomise which game tick these update, a starting server would otherwise start all loaded entities with the same zero timer
         }
@@ -205,7 +170,9 @@ namespace Jaunt.Behaviors
 
             var ebr = entity.GetBehavior<EntityBehaviorRideable>();
 
-            bool anySprint = ebr.Seats.Any(s => s.Controls.Sprint);
+            bool anySprint = false; 
+            
+            if (ebr is not null) anySprint = ebr.Seats.Any(s => s.Controls.Sprint);
 
             bool sprinting = (ebr is EntityBehaviorJauntRideable) ? Sprinting : anySprint;
 
@@ -247,6 +214,7 @@ namespace Jaunt.Behaviors
                 }
 
                 Exhausted = stamina <= 0; // Entity is exhausted when stamina reaches 0
+                MarkDirty();
 
                 timeSinceLastUpdate = 0; 
             }
@@ -270,7 +238,7 @@ namespace Jaunt.Behaviors
 
             var totalPenalty = currentMountedPenalty + currentWoundedPenalty;
 
-            var staminaRegenRate = (StaminaRegenRate - totalPenalty) * JauntConfig.Config.GlobalStaminaRegenMultiplier;
+            var staminaRegenRate = (StaminaRegenRate - totalPenalty) * ModSystem.Config.GlobalStaminaRegenMultiplier;
 
             if (stamina < maxStamina)
             {
@@ -279,6 +247,7 @@ namespace Jaunt.Behaviors
                 var multiplierPerGameSec = elapsedTime * ModSystem.Api.World.Calendar.SpeedOfTime * ModSystem.Api.World.Calendar.CalendarSpeedMul;
 
                 Stamina = Math.Min(stamina + (multiplierPerGameSec * staminaRegenPerQuarterSecond), maxStamina);
+                MarkDirty();
             }
         }
 
@@ -325,6 +294,7 @@ namespace Jaunt.Behaviors
 
             var fatigueRate = BaseFatigueRate * fatigue;
             Stamina = GameMath.Clamp(Stamina - fatigueRate, 0, AdjustedMaxStamina);
+            MarkDirty();
         }
 
         public override void GetInfoText(StringBuilder infotext)

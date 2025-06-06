@@ -22,6 +22,7 @@ namespace Jaunt
         public ILogger Logger => Mod.Logger;
         public ICoreAPI Api { get; private set; }
         public ICoreClientAPI ClientApi { get; private set; }
+        public JauntConfig Config { get; private set; }
         public static JauntModSystem Instance { get; private set; }
 
         // Called on server and client
@@ -32,6 +33,8 @@ namespace Jaunt
 
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
+
+            ReloadConfig(api, false);
         }
 
         public override void StartServerSide(ICoreServerAPI api)
@@ -43,12 +46,14 @@ namespace Jaunt
         {
             ClientApi = api;
 
-            if (JauntConfig.Config.EnableStamina)
+            if (JauntConfig.ChildConfig == null) return;
+
+            if (JauntConfig.ChildConfig.EnableStamina)
             {
                 customHudListenerId = api.Event.RegisterGameTickListener(CheckAndInitializeCustomHud, 20);
             }
 
-            if (JauntConfig.Config.ShowHudIcon)
+            if (JauntConfig.ChildConfig.ShowGaitIcon)
             {
                 hudIconRenderer = new HudIconRenderer(api);
                 hudIconRenderer.Initialize();
@@ -99,6 +104,43 @@ namespace Jaunt
         public float ApplyFatigueProtection(EntityAgent eagent, float fatigue, FatigueSource ftgSource)
         {
             return fatigue;
+        }
+
+        public void ReloadConfig(ICoreAPI api, bool isReload)
+        {
+            try
+            {
+                // Load user config
+                var _config = api.LoadModConfig<JauntConfig>($"{ModId}.json");
+
+                // If no user config, create one
+                if (_config == null)
+                {
+                    Logger.Warning("Missing config! Using default.");
+                    Config = new JauntConfig();
+                }
+                else
+                {
+                    Config = _config;
+                }
+
+                if (isReload)
+                {
+                    // Update stats
+                    // ToDo: Figure out how to update stats on reload
+                }
+                else
+                {
+                    // Only do this if we are not actively reloading
+                    // Store config again (to ensure any new props are saved)
+                    api.StoreModConfig(Config, $"{ModId}.json");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Could not load {ModId} config!");
+                Logger.Error(ex);
+            }
         }
     }
 }

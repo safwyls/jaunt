@@ -16,10 +16,10 @@ namespace Jaunt.Hud
     public class HudElementStaminaBar : HudElement
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
-        public float StaminaBarWidthMultiplier => JauntConfig.Config.StaminaBarWidthMultiplier;
-        public float StaminaBarXOffset => JauntConfig.Config.StaminaBarXOffset;
-        public float StaminaBarYOffset => JauntConfig.Config.StaminaBarYOffset;
-        public StaminaBarPlacement StaminaBarLocation => Enum.TryParse(JauntConfig.Config.StaminaBarLocation, out StaminaBarPlacement location) 
+        public float StaminaBarWidthMultiplier => JauntConfig.ChildConfig.StaminaBarWidthMultiplier;
+        public float StaminaBarXOffset => JauntConfig.ChildConfig.StaminaBarXOffset;
+        public float StaminaBarYOffset => JauntConfig.ChildConfig.StaminaBarYOffset;
+        public StaminaBarPlacement StaminaBarLocation => Enum.TryParse(JauntConfig.ChildConfig.StaminaBarLocation, out StaminaBarPlacement location) 
             ? location
             : StaminaBarPlacement.AboveHealth;
 
@@ -31,7 +31,7 @@ namespace Jaunt.Hud
 
         public bool ShowStaminaBar = true;
         public override double InputOrder => 1.0;
-        private static bool HideStaminaOnFull => JauntConfig.Config?.HideStaminaOnFull ?? true;
+        private static bool HideStaminaOnFull => JauntConfig.ChildConfig?.HideStaminaOnFull ?? true;
 
         public HudElementStaminaBar(ICoreClientAPI capi) : base(capi)
         {
@@ -41,7 +41,7 @@ namespace Jaunt.Hud
 
         public void OnGameTick(float dt)
         {
-            if (!JauntConfig.Config.EnableStamina ||
+            if (!JauntConfig.ChildConfig.EnableStamina ||
                 capi.World.Player.WorldData.CurrentGameMode == EnumGameMode.Spectator)
             {
                 return;
@@ -184,7 +184,7 @@ namespace Jaunt.Hud
 
         public override void OnRenderGUI(float deltaTime)
         {
-            if (!JauntConfig.Config.EnableStamina) return;
+            if (!JauntConfig.ChildConfig.EnableStamina) return;
             if (capi.World.Player.Entity?.MountedOn?.Entity is not EntityAgent ea) return;
             if (ea.HasBehavior<EntityBehaviorJauntStamina>() == false) return;
 
@@ -196,7 +196,7 @@ namespace Jaunt.Hud
 
             if (stamina == maxStamina && HideStaminaOnFull) return;
 
-            if (!JauntConfig.Config.EnableStamina) return;
+            if (!JauntConfig.ChildConfig.EnableStamina) return;
 
             base.OnRenderGUI(deltaTime);
         }
