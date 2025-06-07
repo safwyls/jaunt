@@ -24,6 +24,9 @@ namespace Jaunt
         public JauntConfig Config { get; private set; }
         public static JauntModSystem Instance { get; private set; }
 
+        // Debug mode for logging
+        internal bool DebugMode => Config.GlobalDebugMode;
+
         public override void Start(ICoreAPI api)
         {
             Instance = this;
@@ -44,14 +47,12 @@ namespace Jaunt
         {
             ClientApi = api;
 
-            if (JauntConfig.ChildConfig == null) return;
-
-            if (JauntConfig.ChildConfig.EnableStamina)
+            if (Config.EnableStamina)
             {
                 customHudListenerId = api.Event.RegisterGameTickListener(CheckAndInitializeCustomHud, 20);
             }
 
-            if (JauntConfig.ChildConfig.ShowGaitIcon)
+            if (Config.ShowGaitIcon)
             {
                 hudIconRenderer = new HudIconRenderer(api);
                 hudIconRenderer.Initialize();

@@ -41,7 +41,7 @@ namespace Jaunt.Hud
 
             // Generate empty texture.
             LoadedTexture empty = new(this.capi);
-            ImageSurface surface = new ImageSurface(Format.Argb32, (int)JauntConfig.ChildConfig.IconSize, (int)JauntConfig.ChildConfig.IconSize);
+            ImageSurface surface = new ImageSurface(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
 
             this.capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
             surface.Dispose();
@@ -53,18 +53,18 @@ namespace Jaunt.Hud
 
         private bool CanRender()
         {
-            return JauntConfig.ChildConfig.ShowGaitIcon == true && activeTexture != null;
+            return ModSystem.Config.ShowGaitIcon == true && activeTexture != null;
         }
 
         public void OnRenderFrame(float dt, EnumRenderStage stage)
         {
             if (!CanRender()) return;
 
-            float width = (float)GuiElement.scaled(JauntConfig.ChildConfig.IconSize);
-            float height = (float)GuiElement.scaled(JauntConfig.ChildConfig.IconSize);
+            float width = (float)GuiElement.scaled(ModSystem.Config.IconSize);
+            float height = (float)GuiElement.scaled(ModSystem.Config.IconSize);
 
-            float x = (capi.Render.FrameWidth / 2) - (width / 2) + (float)GuiElement.scaled(JauntConfig.ChildConfig.IconOffsetX);
-            float y = (capi.Render.FrameHeight - height) + (float)GuiElement.scaled(JauntConfig.ChildConfig.IconOffsetY);
+            float x = (capi.Render.FrameWidth / 2) - (width / 2) + (float)GuiElement.scaled(ModSystem.Config.IconOffsetX);
+            float y = (capi.Render.FrameHeight - height) + (float)GuiElement.scaled(ModSystem.Config.IconOffsetY);
 
             capi.Render.RenderTexture(activeTexture.TextureId, x, y, width, height);
         }

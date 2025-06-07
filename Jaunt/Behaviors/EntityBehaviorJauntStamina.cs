@@ -26,14 +26,10 @@ namespace Jaunt.Behaviors
 
         public event OnFatiguedDelegate OnFatigued = (ftg, ftgSource) => ftg;
 
-        private float timeSinceLastUpdate;
-        private float timeSinceLastLog;
+        protected float timeSinceLastUpdate;
+        protected float timeSinceLastLog;
+        protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
-        #region Config props
-
-        private static bool DebugMode => JauntConfig.ChildConfig.DebugMode || ModSystem.Config.GlobalDebugMode; // Debug mode for logging
-
-        #endregion
 
         ITreeAttribute StaminaTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
 

@@ -38,7 +38,7 @@ namespace Jaunt.Behaviors
         public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
         public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
         public AssetLocation Sound { get; set; } // Sound to play when this control is active
-        public AssetLocation Icon { get; set; } // Icon to display for this control
+        public AssetLocation IconTexture { get; set; } // Icon to display for this control
     }
 
     public class EntityBehaviorJauntRideable : EntityBehaviorRideable
@@ -89,7 +89,7 @@ namespace Jaunt.Behaviors
         protected GaitState highStaminaState;
         protected ILoadedSound gaitSound;
         protected EntityBehaviorJauntStamina ebs;
-        protected static bool DebugMode => JauntConfig.ChildConfig.DebugMode || ModSystem.Config.GlobalDebugMode; // Debug mode for logging
+        protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
         protected static string AttributeKey => $"{ModSystem.ModId}:rideable";
         protected static readonly List<GaitState> DefaultGaitOrder = new()
         {
@@ -164,15 +164,15 @@ namespace Jaunt.Behaviors
 
                     string name = asset.GetName().Split('.')[0]; // Get the name without extension
 
-                    capi.Render.GetOrLoadTexture(asset, ref texture);
+                    capi.Render.GetOrLoadTexture(asset.Clone().WithPathPrefix("textures/"), ref texture);
                     texturesDict.Add(name, texture);
                 }
 
                 // Generate empty texture.
-                LoadedTexture empty = new(this.capi);
-                ImageSurface surface = new ImageSurface(Format.Argb32, (int)JauntConfig.ChildConfig.IconSize, (int)JauntConfig.ChildConfig.IconSize);
+                LoadedTexture empty = new(capi);
+                ImageSurface surface = new ImageSurface(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
 
-                this.capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
+                capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
                 surface.Dispose();
 
                 texturesDict.Add("empty", empty);
@@ -629,7 +629,7 @@ namespace Jaunt.Behaviors
 
                     gaitSound = capi.World.LoadSound(new SoundParams()
                     {
-                        Location = controlMeta.Sound,
+                        Location = controlMeta.Sound.Clone().WithPathPrefix("sounds/"),
                         DisposeOnFinish = false,
                         Position = entity.Pos.XYZ.ToVec3f(),
                         ShouldLoop = true
