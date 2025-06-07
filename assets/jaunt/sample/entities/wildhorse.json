@@ -64,7 +64,7 @@
 				"idle": {
                     "isGait": true,
 					"turnRadius": 4,
-					"icon": "equus:textures/hud/walk.png",
+					"iconTexture": "equus:hud/walk.png",
 					"weight": 1,
 					"riderAnim": {
 						"animation": "rideelk-idle",
@@ -123,8 +123,8 @@
 				"walk": {
                     "isGait": true,
 					"turnRadius": 3.5,
-					"sound": "sounds/creature/hooved/trot",
-					"icon": "equus:textures/hud/walk.png",
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/walk.png",
 					"animation": "Walk",
 					"weight": 10,
 						"movespeedByType": {
@@ -162,8 +162,8 @@
 				"trot": {
                     "isGait": true,
 					"turnRadius": 3,
-					"sound": "sounds/creature/hooved/trot",
-					"icon": "equus:textures/hud/trot.png",
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/trot.png",
 					"animation": "Trot",
 					"weight": 10,
 						"movespeedByType": {
@@ -201,8 +201,8 @@
 				"walkback": {
                     "isGait": true,
 					"turnRadius": 3.5,
-					"sound": "sounds/creature/hooved/trot",
-					"icon": "equus:textures/hud/walk.png",
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/walk.png",
 					"animation": "walkback",
 					"weight": 10,
 						"movespeedByType": {
@@ -242,8 +242,8 @@
 				"canter":  {
                     "isGait": true,
 					"turnRadius": 2,
-					"sound": "sounds/creature/hooved/trot",
-					"icon": "equus:textures/hud/canter.png",
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/canter.png",
 					"animation": "Canter",
 					"weight": 10,
 					"movespeedByType": {
@@ -281,8 +281,8 @@
 				"gallop": {
                     "isGait": true,
 					"turnRadius": 1.5,
-					"sound": "sounds/creature/hooved/gallop",
-					"icon": "equus:textures/hud/gallop.png",
+					"sound": "game:creature/hooved/gallop",
+					"iconTexture": "equus:hud/gallop.png",
 					"animation": "Gallop",
 					"easeOutSpeed": 4,
 					"weight": 10,
