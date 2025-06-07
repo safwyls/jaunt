@@ -152,8 +152,8 @@ namespace Jaunt.Behaviors
             if (api is ICoreClientAPI)
             {
                 List<AssetLocation> assetLocations = rideableconfig.Controls.Values
-                    .Where(c => c.Icon is not null)
-                    .Select(c => c.Icon)
+                    .Where(c => c.IconTexture is not null)
+                    .Select(c => c.IconTexture)
                     .ToList();
 
                 texturesDict = new(assetLocations.Count);
