@@ -1,6 +1,7 @@
 ﻿using Jaunt.Config;
 using Jaunt.Systems;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Vintagestory.API.Client;
@@ -20,6 +21,7 @@ namespace Jaunt.Behaviors
     /// <param name="ftgSource"></param>
     /// <returns></returns>
     public delegate float OnFatiguedDelegate(float fatigue, FatigueSource ftgSource);
+        
     public class EntityBehaviorJauntStamina : EntityBehavior
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
@@ -29,11 +31,12 @@ namespace Jaunt.Behaviors
         protected float timeSinceLastUpdate;
         protected float timeSinceLastLog;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
-
-
+        
         ITreeAttribute StaminaTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
 
         private static string AttributeKey => $"{ModSystem.ModId}:stamina";
+        EntityPos prevPos = null;
+        public bool ActivelyFatiguing { get; set; } = false;
 
         public bool Exhausted
         {
@@ -99,6 +102,23 @@ namespace Jaunt.Behaviors
             set => StaminaTree.SetBool("sprinting", value);
         }
 
+        public bool Fleeing
+        {
+            get => StaminaTree.GetBool("fleeing");
+            set => StaminaTree.SetBool("fleeing", value);
+        }
+
+        public bool DontFleeWhenExhausted
+        {
+            get => StaminaTree.GetBool("dontfleewhenexhausted");
+            set => StaminaTree.SetBool("dontfleewhenexhausted", value);
+        }
+        public float ExhaustionThreshold
+        {
+            get => StaminaTree.GetFloat("exhaustionthreshold");
+            set => StaminaTree.GetFloat("exhaustionthreshold", value);
+        }
+
         public FatigueSource SprintFatigueSource;
         public FatigueSource SwimFatigueSource;
 
@@ -146,6 +166,8 @@ namespace Jaunt.Behaviors
             StaminaRegenRate = typeAttributes["staminaregenrate"].AsFloat(ModSystem.Config.DefaultStaminaRegenRate);
             RegenPenaltyWounded = typeAttributes["regenpenaltywounded"].AsFloat(ModSystem.Config.DefaultRegenPenaltyWounded);
             RegenPenaltyMounted = typeAttributes["regenpenaltymounted"].AsFloat(ModSystem.Config.DefaultRegenPenaltyMounted);
+            ExhaustionThreshold = typeAttributes["exhaustionthreshold"].AsFloat(ModSystem.Config.DefaultExhaustionThreshold);
+            DontFleeWhenExhausted = typeAttributes["dontfleewhenexhausted"].AsBool(ModSystem.Config.DefaultDontFleeWhenExhausted);
             MarkDirty();
 
             if (MaxStamina <= 0)
@@ -158,25 +180,19 @@ namespace Jaunt.Behaviors
             timeSinceLastUpdate = (float)entity.World.Rand.NextDouble();   // Randomise which game tick these update, a starting server would otherwise start all loaded entities with the same zero timer
         }
 
-        public override void OnGameTick(float deltaTime)
+        public override void OnGameTick(float dt)
         {
             if (entity.World.Side == EnumAppSide.Client) return;
 
-            var stamina = Stamina;  // better performance to read this TreeAttribute only once
+            var ebtai = entity.GetBehavior<EntityBehaviorTaskAI>();
 
-            var ebr = entity.GetBehavior<EntityBehaviorRideable>();
+            Fleeing = ebtai.TaskManager.ActiveTasksBySlot.Any(task => task is AiTaskFleeEntity);
 
-            bool anySprint = false; 
-            
-            if (ebr is not null) anySprint = ebr.Seats.Any(s => s.Controls.Sprint);
-
-            bool sprinting = (ebr is EntityBehaviorJauntRideable) ? Sprinting : anySprint;
-
-            timeSinceLastUpdate += deltaTime;
-            timeSinceLastLog += deltaTime;
+            timeSinceLastUpdate += dt;
+            timeSinceLastLog += dt;
 
             if (timeSinceLastLog > 1f)
-            {
+            {                
                 // Do some logging every second
 
                 timeSinceLastLog = 0f;
@@ -187,32 +203,36 @@ namespace Jaunt.Behaviors
             {
                 if (entity.Alive)
                 {
-                    bool activelyFatiguing = false;
+                    if (Fleeing && Exhausted && DontFleeWhenExhausted)
+                    {
+                        ebtai.TaskManager.StopTask(typeof(AiTaskFleeEntity));
+                    }
 
-                    // --- Fatiguing actions ---
+                    // --- Globally Fatiguing Actions Here ---
                     // Entity swimming
                     if (entity.Swimming)
                     {
-                        activelyFatiguing = ApplyFatigue(SwimFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Swim);
+                        ActivelyFatiguing = ApplyFatigue(SwimFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Swim);
                     }
-                    
-                    // Entity sprinting
-                    if (sprinting)
+
+                    // Fleeing fatigue
+                    if (Fleeing)
                     {
-                        activelyFatiguing = ApplyFatigue(SprintFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Run);
+                        ActivelyFatiguing = ApplyFatigue(SprintFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Run);
                     }
 
                     // --- Stamina regeneration ---
-                    if (!activelyFatiguing)
+                    if (!ActivelyFatiguing)
                     {
                         RegenerateStamina(timeSinceLastUpdate);
                     }
                 }
 
-                Exhausted = stamina <= 0; // Entity is exhausted when stamina reaches 0
+                Exhausted = Stamina / MaxStamina <= ExhaustionThreshold; // Entity is exhausted when stamina reaches 0
                 MarkDirty();
 
-                timeSinceLastUpdate = 0; 
+                timeSinceLastUpdate = 0;
+                ActivelyFatiguing = false;
             }
         }
 
@@ -284,8 +304,11 @@ namespace Jaunt.Behaviors
             FatigueEntity(fatigue, fatigueSource);
         }
 
-        public void FatigueEntity(float fatigue, FatigueSource ftgSource)
+        // Used to apply fatigue immediately
+        public void FatigueEntity(float fatigue, FatigueSource fs)
         {
+            ActivelyFatiguing = true;
+
             if (entity.World.Side == EnumAppSide.Client) return;
 
             if (!entity.Alive) return;
@@ -303,8 +326,6 @@ namespace Jaunt.Behaviors
             if (capi.World.Player?.WorldData?.CurrentGameMode == EnumGameMode.Creative || capi.Settings.Bool["extendedDebugInfo"])
             {
                 infotext.AppendLine(Lang.Get("jaunt:infotext-stamina-state", Stamina, AdjustedMaxStamina));
-                infotext.AppendLine(Lang.Get("jaunt:infotext-stamina-sprint-fatigue", SprintFatigue));
-                infotext.AppendLine(Lang.Get("jaunt:infotext-stamina-swim-fatigue", SwimFatigue));
             }
         }
 

@@ -8,6 +8,7 @@ namespace Jaunt.Systems
     public enum EnumFatigueSource
     {
         Run,
+        Mounted,
         Jump,
         Swim,
         Mental,

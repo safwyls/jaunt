@@ -31,6 +31,8 @@
         public float DefaultStaminaRegenRate { get; set; } = 1f;
         public float DefaultRegenPenaltyWounded { get; set; } = 0.5f;
         public float DefaultRegenPenaltyMounted { get; set; } = 0.3f;
+        public float DefaultExhaustionThreshold { get; set; } = 0.1f;
+        public bool DefaultDontFleeWhenExhausted { get; set; } = false;
 
         public bool GlobalDebugMode { get; set; } = true;
     }

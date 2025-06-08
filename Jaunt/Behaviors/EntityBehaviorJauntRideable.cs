@@ -1,5 +1,6 @@
 ﻿using Cairo;
 using Jaunt.Config;
+using Jaunt.Systems;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,7 @@ namespace Jaunt.Behaviors
     {
         public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
         public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
+        public float StaminaCost { get; set; } = 0f; // Stamina cost for this control
         public AssetLocation Sound { get; set; } // Sound to play when this control is active
         public AssetLocation IconTexture { get; set; } // Icon to display for this control
     }
@@ -83,6 +85,7 @@ namespace Jaunt.Behaviors
         protected bool lastSprintPressed = false;
         protected float timeSinceLastLog = 0;
         protected float timeSinceLastGaitCheck = 0;
+        protected float timeSinceLastGaitFatigue = 0;
         protected new JauntRideableConfig rideableconfig;
         protected GaitState lowStaminaState;
         protected GaitState moderateStaminaState;
@@ -585,9 +588,6 @@ namespace Jaunt.Behaviors
                 if (nowControlMeta != null) eagent.AnimManager.StartAnimation(nowControlMeta);
             }
 
-            // If entity has stamina let it know youre currently sprinting
-            if (ebs is not null) ebs.Sprinting = CurrentGait == highStaminaState;
-
             if (api.Side == EnumAppSide.Server)
             {
                 eagent.Controls.Sprint = false; // Uh, why does the elk speed up 2x with this on?
@@ -760,6 +760,26 @@ namespace Jaunt.Behaviors
             }
         }
 
+        public void ApplyGaitFatigue(float dt)
+        {
+            if (api.Side != EnumAppSide.Server || ebs == null) return;
+
+            timeSinceLastGaitFatigue += dt;
+
+            if (timeSinceLastGaitFatigue >= 0.25f)
+            {
+                JauntControlMeta nowControlmeta = rideableconfig.Controls[CurrentGait.ToString().ToLowerInvariant()];                
+                if (nowControlmeta.StaminaCost > 0 && !eagent.Swimming)
+                {
+                    ebs.FatigueEntity(nowControlmeta.StaminaCost, new()
+                    {
+                        Source = EnumFatigueSource.Mounted,
+                        SourceEntity = eagent.MountedOn?.Passenger ?? eagent
+                    });
+                }
+            }
+        }
+
         public static float GetStaminaDeficitMultiplier(float currentStamina, float maxStamina)
         {
             float midpoint = maxStamina * 0.5f;
@@ -783,6 +803,8 @@ namespace Jaunt.Behaviors
             {
                 UpdateAngleAndMotion(dt);
             }
+
+            ApplyGaitFatigue(dt);
 
             StaminaGaitCheck(dt);
 
