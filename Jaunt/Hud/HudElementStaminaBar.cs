@@ -162,17 +162,17 @@ namespace Jaunt.Hud
 
             var staminaBarParentBounds = statsBarBounds.FlatCopy().FixedGrow(0.0, 20.0);
 
-            var composer = capi.Gui.CreateCompo("staminastatbar", staminaBarParentBounds);
+            var composer = capi.Gui.CreateCompo($"{ModSystem.ModId}:staminastatbar", staminaBarParentBounds);
 
             _statbar = new GuiElementStatbar(composer.Api, staminaBarBounds, staminaBarColor, isRight, false);
 
             composer
                 .BeginChildElements(statsBarBounds)
-                .AddInteractiveElement(_statbar, "staminastatsbar")
+                .AddInteractiveElement(_statbar, $"{ModSystem.ModId}:staminastatsbar")
                 .EndChildElements()
                 .Compose();
 
-            Composers["staminabar"] = composer;
+            Composers[$"{ModSystem.ModId}:staminabar"] = composer;
 
             TryOpen();
         }
