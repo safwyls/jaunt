@@ -123,6 +123,7 @@
 				"walk": {
                     "isGait": true,
 					"turnRadius": 3.5,
+					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
 					"iconTexture": "equus:hud/walk.png",
 					"animation": "Walk",
@@ -162,6 +163,7 @@
 				"trot": {
                     "isGait": true,
 					"turnRadius": 3,
+					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
 					"iconTexture": "equus:hud/trot.png",
 					"animation": "Trot",
@@ -201,6 +203,7 @@
 				"walkback": {
                     "isGait": true,
 					"turnRadius": 3.5,
+					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
 					"iconTexture": "equus:hud/walk.png",
 					"animation": "walkback",
@@ -242,6 +245,7 @@
 				"canter":  {
                     "isGait": true,
 					"turnRadius": 2,
+					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
 					"iconTexture": "equus:hud/canter.png",
 					"animation": "Canter",
@@ -281,6 +285,7 @@
 				"gallop": {
                     "isGait": true,
 					"turnRadius": 1.5,
+					"staminaCost": 0.2,
 					"sound": "game:creature/hooved/gallop",
 					"iconTexture": "equus:hud/gallop.png",
 					"animation": "Gallop",
@@ -358,8 +363,10 @@
 			"swimFatigue": 0.2,
 			"baseFatigueRate": 1,
 			"staminaRegenRate": 1,
+			"dontFleeWhenExhausted": true,
 			"regenPenaltyWounded": 0.5,
-			"regenPenaltyMounted": 0.3
+			"regenPenaltyMounted": 0.3,
+			"exhaustionThreshold": 0.1
 		},
 		"health": {
 			"currenthealthByType": {
@@ -370,7 +377,7 @@
 			}
 		},
 		"ownable": {
-			"groupCode": "mountableanimal"
+			"groupCode": "ferus"
 		},
 	"drops": []
 	},
@@ -447,9 +454,9 @@
 			{ "code": "milkable", "enabledByType": { "*-adult-female-*": true, "*": false } },
 			{ "code": "ownable", "enabledByType": { "*-baby-*": false,"*": true}, "minGeneration": 2},
 			{ "code": "rideableaccessories", "enabledByType": { "*-baby-*": false,"*-adult-*": true, "*": false }},
-			{ "code": "jaunt:rideable", "enabledByType": { "*-baby-*": false, "*-adult-*": true, "*": false}},
 			{ "code": "selectionboxes", "enabledByType": { "*-baby-*": false, "*-adult-*": true, "*": false}},
 			{ "code": "ropetieable" },
+			{ "code": "jaunt:rideable", "enabledByType": { "*-baby-*": false, "*-adult-*": true, "*": false}},
 			{ "code": "jaunt:stamina" },
 			{ "code": "genelib.info", "showtagonlywhentargeted": true }
 		],
