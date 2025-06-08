@@ -1,6 +1,7 @@
 ﻿using Cairo;
 using Jaunt.Config;
 using Jaunt.Systems;
+using Jaunt.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -744,7 +745,7 @@ namespace Jaunt.Behaviors
             {
                 if (CurrentGait == highStaminaState && !eagent.Swimming)
                 {
-                    bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
+                    bool isTired = api.World.Rand.NextDouble() < JauntUtil.GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina, 0.5f);
 
                     if (isTired)
                     {
@@ -779,17 +780,7 @@ namespace Jaunt.Behaviors
                 }
             }
         }
-
-        public static float GetStaminaDeficitMultiplier(float currentStamina, float maxStamina)
-        {
-            float midpoint = maxStamina * 0.5f;
-
-            if (currentStamina >= midpoint)
-                return 0f;
-
-            float deficit = 1f - (currentStamina / midpoint);  // 0 at midpoint, 1 at 0 stamina
-            return deficit * deficit;  // Quadratic curve for gradual increase
-        }
+        
 
         #endregion Utility Methods
 

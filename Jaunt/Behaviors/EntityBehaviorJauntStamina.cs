@@ -1,5 +1,6 @@
 ﻿using Jaunt.Config;
 using Jaunt.Systems;
+using Jaunt.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace Jaunt.Behaviors
 
         public event OnFatiguedDelegate OnFatigued = (ftg, ftgSource) => ftg;
 
+        ICoreAPI api;
         protected float timeSinceLastUpdate;
         protected float timeSinceLastLog;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
@@ -128,6 +130,8 @@ namespace Jaunt.Behaviors
 
         public override void Initialize(EntityProperties properties, JsonObject typeAttributes)
         {
+            api = entity.Api;
+
             if (DebugMode) ModSystem.Logger.Notification(Lang.Get("jaunt:debug-stamina-init", entity.EntityId));
 
             // Initialize common fatigue sources
@@ -203,6 +207,7 @@ namespace Jaunt.Behaviors
             {
                 if (entity.Alive)
                 {
+                    if (Exhausted) ModSystem.Logger.Notification("Exhausted");
                     if (Fleeing && Exhausted && DontFleeWhenExhausted)
                     {
                         ebtai.TaskManager.StopTask(typeof(AiTaskFleeEntity));
@@ -228,7 +233,7 @@ namespace Jaunt.Behaviors
                     }
                 }
 
-                Exhausted = Stamina / MaxStamina <= ExhaustionThreshold; // Entity is exhausted when stamina reaches 0
+                Exhausted = api.World.Rand.NextDouble() < JauntUtil.GetStaminaDeficitMultiplier(Stamina, MaxStamina, ExhaustionThreshold); // Entity is exhausted when stamina reaches 0
                 MarkDirty();
 
                 timeSinceLastUpdate = 0;
