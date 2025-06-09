@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Hud
@@ -35,7 +37,8 @@ namespace Jaunt.Hud
 
                 string name = asset.GetName().Split('.')[0]; // Get the name without extension
 
-                capi.Render.GetOrLoadTexture(asset, ref texture);
+                var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
+                texture = capi.Gui.LoadSvg(name, size, size, size, size, ColorUtil.WhiteArgb);
                 texturesDict.Add(name, texture);
             }
 

@@ -15,16 +15,6 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    public enum GaitState
-    {
-        Walkback, // Special case for walking backwards
-        Idle,
-        Walk,
-        Trot,
-        Canter,
-        Gallop
-    }
-
     public class JauntRideableConfig
     {
         public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
@@ -36,7 +26,12 @@ namespace Jaunt.Behaviors
 
     public class JauntControlMeta : ControlMeta
     {
-        public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
+        public GaitControlMeta Gait { get; set; } // The gait control meta information
+    }
+
+    public record GaitControlMeta
+    {
+        public int Order { get; set; } // The sequencing order for gaits, starting from backward to fastest forward
         public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
         public float StaminaCost { get; set; } = 0f; // Stamina cost for this control
         public AssetLocation Sound { get; set; } // Sound to play when this control is active
@@ -50,16 +45,12 @@ namespace Jaunt.Behaviors
         #region Public
         
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
-        public List<GaitState> AvailableGaits = new();
+        public List<GaitControlMeta> AvailableGaits = new();
         public FastSmallDictionary<string, LoadedTexture> texturesDict;
-        public GaitState CurrentGait
+        public string CurrentGait
         {
-            get => (GaitState)entity.WatchedAttributes.GetInt("currentgait", (int)GaitState.Walk);
-            set
-            {
-                entity.WatchedAttributes.SetInt("currentgait", (int)value);
-                entity.WatchedAttributes.MarkPathDirty(AttributeKey);
-            }
+            get => entity.WatchedAttributes.GetString("currentgait", GaitState.Idle);
+            set => entity.WatchedAttributes.SetString("currentgait", value);
         }
 
         #endregion Public
@@ -87,22 +78,13 @@ namespace Jaunt.Behaviors
         protected float timeSinceLastGaitCheck = 0;
         protected float timeSinceLastGaitFatigue = 0;
         protected new JauntRideableConfig rideableconfig;
-        protected GaitState lowStaminaState;
-        protected GaitState moderateStaminaState;
-        protected GaitState highStaminaState;
+        protected string lowStaminaState;
+        protected string moderateStaminaState;
+        protected string highStaminaState;
         protected ILoadedSound gaitSound;
         protected EntityBehaviorJauntStamina ebs;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
         protected static string AttributeKey => $"{ModSystem.ModId}:rideable";
-        protected static readonly List<GaitState> DefaultGaitOrder = new()
-        {
-            GaitState.Walkback,
-            GaitState.Idle,
-            GaitState.Walk,
-            GaitState.Trot,
-            GaitState.Canter,
-            GaitState.Gallop
-        };
 
         #endregion Protected
 
@@ -125,7 +107,7 @@ namespace Jaunt.Behaviors
             api = entity.Api;
             capi = api as ICoreClientAPI;
 
-            if (DebugMode) ModSystem.Logger.Notification(Lang.Get("jaunt:debug-rideable-init", entity.EntityId));
+            if (DebugMode) ModSystem.Logger.Notification(Lang.Get($"{ModSystem.ModId}:debug-rideable-init", entity.EntityId));
 
             base.Initialize(properties, attributes);
 
@@ -137,13 +119,12 @@ namespace Jaunt.Behaviors
             highStaminaState = Enum.TryParse<GaitState>(rideableconfig.HighStaminaState, out var highStamina) ? highStamina : GaitState.Gallop;
 
             AvailableGaits.Clear();
-            foreach (var gait in DefaultGaitOrder)
-            {
-                if (rideableconfig.Controls.ContainsKey(gait.ToString().ToLowerInvariant()))
-                {
-                    AvailableGaits.Add(gait);
-                }
-            }
+            
+            AvailableGaits = rideableconfig.Controls
+                .Where(c => c.Value.Gait is not null)
+                .Select(c => c.Value.Gait)
+                .OrderBy(g => g.Order)
+                .ToList();
 
             foreach (var val in rideableconfig.Controls.Values) { val.RiderAnim?.Init(); }
 
@@ -154,9 +135,9 @@ namespace Jaunt.Behaviors
             // Fetch custom gait icons
             if (api is ICoreClientAPI)
             {
-                List<AssetLocation> assetLocations = rideableconfig.Controls.Values
-                    .Where(c => c.IconTexture is not null)
-                    .Select(c => c.IconTexture)
+                List<AssetLocation> assetLocations = AvailableGaits
+                    .Where(g => g.IconTexture is not null)
+                    .Select(g => g.IconTexture)
                     .ToList();
 
                 texturesDict = new(assetLocations.Count);
@@ -167,7 +148,9 @@ namespace Jaunt.Behaviors
 
                     string name = asset.GetName().Split('.')[0]; // Get the name without extension
 
-                    capi.Render.GetOrLoadTexture(asset.Clone().WithPathPrefix("textures/"), ref texture);
+                    var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
+                    var loc = asset.Clone().WithPathPrefix("textures/");
+                    texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
                     texturesDict.Add(name, texture);
                 }
 
