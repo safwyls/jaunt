@@ -50,6 +50,12 @@
 			<Link>assets/%(RecursiveDir)%(Filename)%(Extension)</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+		<Content Remove="..\assets\jaunt\textures\hud\canter.png" />
+		<Content Remove="..\assets\jaunt\textures\hud\gallop.png" />
+		<Content Remove="..\assets\jaunt\textures\hud\idle.png" />
+		<Content Remove="..\assets\jaunt\textures\hud\trot.png" />
+		<Content Remove="..\assets\jaunt\textures\hud\walk.png" />
+		<Content Remove="..\assets\jaunt\textures\hud\walkback.png" />
         <Content Include="../modinfo.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>

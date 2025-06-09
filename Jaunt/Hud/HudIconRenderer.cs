@@ -3,9 +3,12 @@ using Jaunt.Behaviors;
 using Jaunt.Config;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Hud
@@ -27,15 +30,17 @@ namespace Jaunt.Hud
 
         public void Initialize()
         {
+            var icons = capi.Assets.GetMany("textures/hud/", ModSystem.ModId, false);
             List<AssetLocation> assetLocations = capi.Assets.GetLocations("textures/hud/", ModSystem.ModId);
 
-            foreach (var asset in assetLocations)
+            foreach (var icon in icons)
             {
-                LoadedTexture texture = new(capi);
+                string name = icon.Name.Substring(0, icon.Name.IndexOf('.'));
 
-                string name = asset.GetName().Split('.')[0]; // Get the name without extension
+                name = Regex.Replace(name, @"\d+\-", "");
 
-                capi.Render.GetOrLoadTexture(asset, ref texture);
+                var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
+                LoadedTexture texture = capi.Gui.LoadSvg(icon.Location, size, size, size, size, ColorUtil.WhiteArgb);
                 texturesDict.Add(name, texture);
             }
 

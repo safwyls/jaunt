@@ -50,6 +50,50 @@
 		"selectionboxes": {
 			"selectionBoxes": ["HeadAP","MidAP","MidUnderAP","RearSideAP","NeckAP", "RearAP","FaceAP"]
 		},
+		"jaunt:gait": {
+			"gaits": {
+				"1": {
+					"turnRadius": 3.5,
+					"staminaCost": 0,
+					"movespeedByType": { "*-ferus": -0.013 },
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/walk.svg"
+				},
+				"2": {
+					"turnRadius": 3.5,
+					"staminaCost": 0,
+					"moveSpeed": 0,
+					"iconTexture": "equus:hud/walk.svg"
+				},
+				"3": {
+					"turnRadius": 3.5,
+					"staminaCost": 0,
+					"movespeedByType": { "*-ferus": 0.013 },
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/walk.svg"
+				},
+				"4": {
+					"turnRadius": 3,
+					"staminaCost": 0,
+					"movespeedByType": { "*-ferus": 0.035 },
+					"iconTexture": "equus:hud/walk.svg"
+				},
+				"5": {
+					"turnRadius": 2,
+					"staminaCost": 0,
+					"movespeedByType": { "*-ferus": 0.07625 },
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "equus:hud/canter.svg"
+				},
+				"6": {
+					"turnRadius": 1.5,
+					"staminaCost": 0.2,
+					"movespeedByType": { "*-ferus": 0.12 },
+					"sound": "game:creature/hooved/gallop",
+					"iconTexture": "equus:hud/gallop.svg"
+				}
+			}
+		} 
 		"jaunt:rideable": {
 			"interactMountAnySeat": true,
 			"seats": [
@@ -62,9 +106,6 @@
             "highStaminaState": "gallop",
 			"controls": {
 				"idle": {
-                    "isGait": true,
-					"turnRadius": 4,
-					"iconTexture": "equus:hud/walk.png",
 					"weight": 1,
 					"riderAnim": {
 						"animation": "rideelk-idle",
@@ -121,20 +162,15 @@
 					}
 				},
 				"walk": {
-                    "isGait": true,
-					"turnRadius": 3.5,
-					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "equus:hud/walk.png",
 					"animation": "Walk",
 					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.013
-						},
-						"animationSpeedByType": {
-							"*-ferus": 1.125,
-							"*": 1.125
-						},
+					"movespeedByType": {
+						"*-ferus": 0.013
+					},
+					"animationSpeedByType": {
+						"*-ferus": 1.125,
+						"*": 1.125
+					},
 					"blendMode": "Average",
 					"riderAnim": {
 						"animation": "rideelk-walk",
@@ -161,20 +197,15 @@
 					}
 				},
 				"trot": {
-                    "isGait": true,
-					"turnRadius": 3,
-					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "equus:hud/trot.png",
 					"animation": "Trot",
 					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.035
-						},
-						"animationSpeedByType": {
-							"*-ferus": 2.5,
-							"*": 2.5
-						},
+					"movespeedByType": {
+						"*-ferus": 0.035
+					},
+					"animationSpeedByType": {
+						"*-ferus": 2.5,
+						"*": 2.5
+					},
 					"blendMode": "Average",
 					"riderAnim": {
 						"animation": "rideelk-walk",
@@ -201,20 +232,15 @@
 					}
 				},
 				"walkback": {
-                    "isGait": true,
-					"turnRadius": 3.5,
-					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "equus:hud/walk.png",
 					"animation": "walkback",
 					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.013
-						},
-						"animationSpeedByType": {
-							"*-ferus": 1.125,
-							"*": 1.125
-						},
+					"movespeedByType": {
+						"*-ferus": 0.013
+					},
+					"animationSpeedByType": {
+						"*-ferus": 1.125,
+						"*": 1.125
+					},
 					"easeInSpeed": 1,
 					"easeOutSpeed": 3,
 					"blendMode": "Average",
@@ -243,11 +269,6 @@
 					}
 				},
 				"canter":  {
-                    "isGait": true,
-					"turnRadius": 2,
-					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "equus:hud/canter.png",
 					"animation": "Canter",
 					"weight": 10,
 					"movespeedByType": {
@@ -283,21 +304,16 @@
 					}
 				},
 				"gallop": {
-                    "isGait": true,
-					"turnRadius": 1.5,
-					"staminaCost": 0.2,
-					"sound": "game:creature/hooved/gallop",
-					"iconTexture": "equus:hud/gallop.png",
 					"animation": "Gallop",
 					"easeOutSpeed": 4,
 					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.12
-						},
-						"animationSpeedByType": {
-							"*-ferus": 3.1,
-							"*": 3
-						},
+					"movespeedByType": {
+						"*-ferus": 0.12
+					},
+					"animationSpeedByType": {
+						"*-ferus": 3.1,
+						"*": 3
+					},
 					"blendMode": "Average",
 					"riderAnim": {
 						"animation": "rideelk-run",

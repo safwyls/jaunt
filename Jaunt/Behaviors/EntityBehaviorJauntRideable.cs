@@ -15,32 +15,13 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    public enum GaitState
-    {
-        Walkback, // Special case for walking backwards
-        Idle,
-        Walk,
-        Trot,
-        Canter,
-        Gallop
-    }
-
     public class JauntRideableConfig
     {
-        public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
+        public Dictionary<string, ControlMeta> Controls { get; set; } = new Dictionary<string, ControlMeta>();
         public int MinGeneration { get; set; } = 0; // Minimum generation for the animal to be rideable
         public string LowStaminaState { get; set; } = "walk"; // Control code for low stamina state
         public string ModerateStaminaState { get; set; } = "walk"; // Control code for moderate stamina state
         public string HighStaminaState { get; set; } = "gallop"; // Control code for high stamina state
-    }
-
-    public class JauntControlMeta : ControlMeta
-    {
-        public bool IsGait { get; set; } = false; // Indicates if this control is a gait control
-        public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
-        public float StaminaCost { get; set; } = 0f; // Stamina cost for this control
-        public AssetLocation Sound { get; set; } // Sound to play when this control is active
-        public AssetLocation IconTexture { get; set; } // Icon to display for this control
     }
 
     public class EntityBehaviorJauntRideable : EntityBehaviorRideable
@@ -51,7 +32,6 @@ namespace Jaunt.Behaviors
         
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         public List<GaitState> AvailableGaits = new();
-        public FastSmallDictionary<string, LoadedTexture> texturesDict;
         public GaitState CurrentGait
         {
             get => (GaitState)entity.WatchedAttributes.GetInt("currentgait", (int)GaitState.Walk);
@@ -151,35 +131,7 @@ namespace Jaunt.Behaviors
 
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
 
-            // Fetch custom gait icons
-            if (api is ICoreClientAPI)
-            {
-                List<AssetLocation> assetLocations = rideableconfig.Controls.Values
-                    .Where(c => c.IconTexture is not null)
-                    .Select(c => c.IconTexture)
-                    .ToList();
-
-                texturesDict = new(assetLocations.Count);
-
-                foreach (var asset in assetLocations)
-                {
-                    LoadedTexture texture = new(capi);
-
-                    string name = asset.GetName().Split('.')[0]; // Get the name without extension
-
-                    capi.Render.GetOrLoadTexture(asset.Clone().WithPathPrefix("textures/"), ref texture);
-                    texturesDict.Add(name, texture);
-                }
-
-                // Generate empty texture.
-                LoadedTexture empty = new(capi);
-                ImageSurface surface = new ImageSurface(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
-
-                capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
-                surface.Dispose();
-
-                texturesDict.Add("empty", empty);
-            }
+            
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -828,19 +780,5 @@ namespace Jaunt.Behaviors
         }
 
         #endregion Listeners
-
-        #region Disposal
-        
-        public new void Dispose()
-        {
-            base.Dispose();
-
-            foreach (var texture in texturesDict.Values)
-            {
-                texture.Dispose();
-            }
-        }
-
-        #endregion
     }
 }
