@@ -38,7 +38,7 @@ namespace Jaunt.Hud
                 string name = asset.GetName().Split('.')[0]; // Get the name without extension
 
                 var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
-                texture = capi.Gui.LoadSvg(name, size, size, size, size, ColorUtil.WhiteArgb);
+                texture = capi.Gui.LoadSvg(asset, size, size, size, size, ColorUtil.WhiteArgb);
                 texturesDict.Add(name, texture);
             }
 
@@ -76,18 +76,9 @@ namespace Jaunt.Hud
         {
             EntityPlayer player = capi.World.Player.Entity;
 
-            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorRideable>() is EntityBehaviorJauntRideable ebr)
+            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorGait>() is EntityBehaviorGait ebg)
             {
-                activeTexture = ebr.CurrentGait switch
-                {
-                    GaitState.Walkback => ebr.texturesDict.TryGetValue("walkback", out LoadedTexture t) ? t : texturesDict["walkback"],
-                    GaitState.Idle => ebr.texturesDict.TryGetValue("idle", out LoadedTexture t) ? t : texturesDict["idle"],
-                    GaitState.Walk => ebr.texturesDict.TryGetValue("walk", out LoadedTexture t) ? t : texturesDict["walk"],
-                    GaitState.Trot => ebr.texturesDict.TryGetValue("trot", out LoadedTexture t) ? t : texturesDict["trot"],
-                    GaitState.Canter => ebr.texturesDict.TryGetValue("canter", out LoadedTexture t) ? t : texturesDict["canter"],
-                    GaitState.Gallop => ebr.texturesDict.TryGetValue("gallop", out LoadedTexture t) ? t : texturesDict["gallop"],
-                    _ => texturesDict["empty"]  
-                };
+                activeTexture = ebg.texturesDict[ebg.CurrentGait.Code] ?? texturesDict["empty"];
             }
             else
             {
