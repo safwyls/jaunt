@@ -41,7 +41,6 @@ namespace Jaunt.Behaviors
 
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
         internal bool prevForwardKey, prevBackwardKey, prevSprintKey;
-        internal bool forward, backward;
         internal float notOnGroundAccum;
         internal string prevSoundCode;
         internal bool shouldMove = false;
@@ -109,9 +108,15 @@ namespace Jaunt.Behaviors
             ebs = eagent.GetBehavior<EntityBehaviorJauntStamina>();
             ebg = eagent.GetBehavior<EntityBehaviorGait>();
 
-            LowStaminaGait = ebg.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.LowStaminaGait);
-            ModerateStaminaGait = ebg.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.ModerateStaminaGait);
-            HighStaminaGait = ebg.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.HighStaminaGait);
+            // Gaits are required for rideable entities
+            if (ebg is null) 
+            {
+                throw new Exception("EntityBehaviorGait not found on rideable entity. Ensure it is properly registered in the entity's properties.");
+            }
+
+            LowStaminaGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.LowStaminaGait);
+            ModerateStaminaGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.ModerateStaminaGait);
+            HighStaminaGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.HighStaminaGait);
         }
         
         #endregion Initialization
@@ -156,15 +161,16 @@ namespace Jaunt.Behaviors
 
             return !Seats.Any(seat => seat.Passenger != null);
         }
-        
+
         #endregion AI Task Management
 
         #region Inventory and Control Scheme Management
-        
+
         private void Inventory_SlotModified(int obj)
         {
             UpdateControlScheme();
             ebg.SetIdle();
+        }
 
         private void UpdateControlScheme()
         {
@@ -261,87 +267,56 @@ namespace Jaunt.Behaviors
                 if (!canride) continue;
                 #endregion
 
+                #region Jump Control
                 // Only able to jump every 1500ms. Only works while on the ground.
                 if (controls.Jump && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 && entity.Alive && (entity.OnGround || coyoteTimer > 0))
                 {
                     lastJumpMs = entity.World.ElapsedMilliseconds;
                     jumpNow = true;
                 }
+                #endregion Jump Control
 
-                if (scheme == EnumControlScheme.Hold && !controls.TriesToMove)
-                {
-                    continue;
-                }
-
+                if (scheme == EnumControlScheme.Hold && !controls.TriesToMove) continue;
+                
                 float str = ++seatsRowing == 1 ? 1 : 0.5f;
 
+                // Detect if button currently being pressed
                 bool nowForwards = controls.Forward;
                 bool nowBackwards = controls.Backward;
-
-                // Handle gait switching via sprint button
                 bool nowSprint = controls.CtrlKey;
 
-                // Detect fresh button presses
+                // Detect if current press is a fresh press
                 bool forwardPressed = nowForwards && !prevForwardKey;
                 bool backwardPressed = nowBackwards && !prevBackwardKey;
                 bool sprintPressed = nowSprint && !prevSprintKey;
 
                 long nowMs = entity.World.ElapsedMilliseconds;
 
-                #region Common controls across both schemes
-                // This ensures we start moving without having to press sprint
-                if (forwardPressed && CurrentGait == GaitState.Idle) CurrentGait = GaitState.Walk;
+                // This ensures we start moving without sprint key
+                if (forwardPressed && ebg.IsIdle) ebg.SpeedUp();                
 
-                if (forward && sprintPressed && nowMs - lastGaitChangeMs > 300)
+                // Handle backward to idle change without sprint key
+                if (forwardPressed && ebg.IsBackward) ebg.SetIdle();
+
+                // Cycle up with sprint
+                if (ebg.IsForward && sprintPressed && nowMs - lastGaitChangeMs > 300)
                 {
-                    CurrentGait = GetNextGait(CurrentGait, true);
+                    ebg.SpeedUp();
 
                     lastGaitChangeMs = nowMs;
                 }
 
+                // Cycle down with back
                 if (backwardPressed && nowMs - lastGaitChangeMs > 300)
                 {
-                    CurrentGait = GetNextGait(CurrentGait, false);
+                    ebg.SlowDown();
 
                     lastGaitChangeMs = nowMs;
                 }
 
                 prevSprintKey = nowSprint;
-                #endregion
-
-                if (scheme == EnumControlScheme.Hold)
-                {
-                    #region Snaffle bit controls (Hold scheme)
-                    forward = controls.Forward;
-                    backward = controls.Backward;
-                    #endregion
-                }
-                else
-                {
-                    #region Curb bit controls (Press scheme)                    
-                    // Handle backward to idle change without sprint key
-                    if (forwardPressed && CurrentGait == GaitState.Walkback) CurrentGait = GaitState.Idle;
-
-                    switch (CurrentGait)
-                    {
-                        case GaitState.Walkback:
-                            backward = true;
-                            forward = false;
-                            break;
-                        case GaitState.Idle:
-                            backward = false;
-                            forward = false;
-                            break;
-                        default:
-                            backward = false;
-                            forward = true;
-                            break;
-                    }
-
-                    prevForwardKey = nowForwards;
-                    prevBackwardKey = nowBackwards;
-                    #endregion
-                }
+                prevForwardKey = scheme == EnumControlScheme.Press && nowForwards;
+                prevBackwardKey = scheme == EnumControlScheme.Press && nowBackwards;
 
                 #region Motion update
                 if (canturn && (controls.Left || controls.Right))
@@ -349,9 +324,9 @@ namespace Jaunt.Behaviors
                     float dir = controls.Left ? 1 : -1;
                     angularMotion += str * dir * dt;
                 }
-                if (forward || backward)
+                if (ebg.IsForward || ebg.IsBackward)
                 {
-                    float dir = forward ? 1 : -1;
+                    float dir = ebg.IsForward ? 1 : -1;
                     linearMotion += str * dir * dt * 2f;
                 }
                 #endregion
@@ -372,16 +347,7 @@ namespace Jaunt.Behaviors
 
             ForwardSpeed = Math.Sign(motion.X);
 
-            float yawMultiplier = CurrentGait switch
-            {
-                GaitState.Walkback => rideableconfig.Controls["walkback"].TurnRadius,
-                GaitState.Idle => rideableconfig.Controls["idle"].TurnRadius,
-                GaitState.Walk => rideableconfig.Controls["walk"].TurnRadius,
-                GaitState.Trot => rideableconfig.Controls["trot"].TurnRadius,
-                GaitState.Canter => rideableconfig.Controls["canter"].TurnRadius,
-                GaitState.Gallop => rideableconfig.Controls["gallop"].TurnRadius,
-                _ => 3.5f
-            };
+            float yawMultiplier = ebg?.GetTurnRadius() ?? 3.5f;
 
             AngularVelocity = motion.Y * yawMultiplier;
 
@@ -436,30 +402,9 @@ namespace Jaunt.Behaviors
             }
             else
             {
-                string controlCode = eagent.Controls.Backward ? "walkback" : "walk";
+                nowControlMeta = rideableconfig.Controls.FirstOrDefault(c => c.Key == ebg.CurrentGait.Code).Value;
 
-                switch (ebg.CurrentGait)
-                {
-                    case GaitState.Idle:
-                        controlCode = "idle";
-                        break;
-                    case GaitState.Walk:
-                        controlCode = eagent.Controls.Backward ? "walkback" : "walk";
-                        break;
-                    case GaitState.Trot:
-                        controlCode = "trot";
-                        break;
-                    case GaitState.Canter:
-                        controlCode = "canter";
-                        break;
-                    case GaitState.Gallop:
-                        controlCode = "gallop";
-                        break;
-                }
-
-                if (eagent.Swimming) controlCode = "swim";
-
-                nowControlMeta = rideableconfig.Controls[controlCode];
+                nowControlMeta = eagent.Swimming ? rideableconfig.Controls["swim"] : nowControlMeta;
                 eagent.Controls.Jump = jumpNow;
 
                 if (jumpNow)
@@ -510,21 +455,11 @@ namespace Jaunt.Behaviors
 
             gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            if (rideableconfig.Controls.ContainsKey(ebg.CurrentGait.ToString().ToLowerInvariant()))
+            if (rideableconfig.Controls.TryGetValue(ebg.CurrentGait.Code, out ControlMeta controlMeta))
             {
-                var controlMeta = rideableconfig.Controls[ebg.CurrentGait.ToString().ToLowerInvariant()];
-                var gaitMeta = ebg.SortedGaits.FirstOrDefault(g => g.Code == ebg.CurrentGait.ToString().ToLowerInvariant());
+                var gaitMeta = ebg.CurrentGait;
 
-                if (entity.Swimming)
-                {
-                    controlMeta = rideableconfig.Controls["swim"];
-                }
-                else if (notOnGroundAccum > 0.2f)
-                {
-                    controlMeta = rideableconfig.Controls["jump"];
-                }
-
-                curSoundCode = gaitMeta.Sound;
+                curSoundCode = eagent.Swimming || notOnGroundAccum > 0.2 ? null : gaitMeta.Sound;
 
                 bool nowChange = curSoundCode != prevSoundCode;
 
@@ -638,12 +573,12 @@ namespace Jaunt.Behaviors
         public new void DidMount(EntityAgent entityAgent)
         {
             UpdateControlScheme();
-            ebg.SetIdle();
+            ebg?.SetIdle();
         }
 
         public void StaminaGaitCheck(float dt)
         {
-            if (api.Side != EnumAppSide.Server || ebs == null) return;
+            if (api.Side != EnumAppSide.Server || ebs == null || ebg == null) return;
 
             timeSinceLastGaitCheck += dt;
 
