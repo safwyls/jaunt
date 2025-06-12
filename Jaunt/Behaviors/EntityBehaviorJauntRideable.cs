@@ -114,7 +114,7 @@ namespace Jaunt.Behaviors
 
             foreach (var str in GaitOrderCodes)
             {
-                GaitMeta gait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == str);
+                GaitMeta gait = ebg?.Gaits[str];
                 if (gait != null) RideableGaitOrder.Add(gait);
             }
         }
@@ -209,7 +209,7 @@ namespace Jaunt.Behaviors
 
                 // Boundary behavior
                 if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex >= ebg.SortedGaits.Count) nextIndex = currentIndex - 1;
+                if (nextIndex >= RideableGaitOrder.Count) nextIndex = currentIndex - 1;
 
                 return RideableGaitOrder[nextIndex];
             }

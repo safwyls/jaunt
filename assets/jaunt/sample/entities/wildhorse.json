@@ -54,7 +54,6 @@
 			"gaits": [
 				{
 					"code": "walkback",
-					"order": 0,
 					"movespeedByType": {
 						"*-ferus": 0.013
 					},
@@ -65,12 +64,10 @@
 				},
 				{
 					"code": "idle",
-					"order": 1,
 					"turnRadius": 4
 				},
 				{
 					"code": "walk",
-					"order": 2,
 					"movespeedByType": {
 						"*-ferus": 0.013
 					},
@@ -81,7 +78,6 @@
 				},
 				{
 					"code": "trot",
-					"order": 3,
 					"movespeedByType": {
 						"*-ferus": 0.036
 					},
@@ -91,7 +87,6 @@
 				},
 				{
 					"code": "canter",
-					"order": 4,
 					"movespeedByType": {
 						"*-ferus": 0.08475
 					},
@@ -101,7 +96,6 @@
 				},
 				{
 					"code": "gallop",
-					"order": 5,
 					"movespeedByType": {
 						"*-ferus": 0.16
 					},

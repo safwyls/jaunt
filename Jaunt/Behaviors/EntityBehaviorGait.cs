@@ -19,7 +19,6 @@ namespace Jaunt.Behaviors
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
-        public int Order { get; set; } // The sequencing order for gaits, starting from backward to fastest forward
         public float TurnRadius { get; set; } = 3.5f;
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
@@ -36,16 +35,15 @@ namespace Jaunt.Behaviors
         {
             return $"{ModSystem.ModId}:gait";
         }
-        public List<GaitMeta> SortedGaits { get; private set; }
+        public readonly Dictionary<string, GaitMeta> Gaits = new Dictionary<string, GaitMeta>();
         public GaitMeta CurrentGait
         {
-            get => SortedGaits.FirstOrDefault(g => g.Code == entity.WatchedAttributes.GetString("currentgait"));
+            get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
             set => entity.WatchedAttributes.SetString("currentgait", value.Code);
         }
 
-        // Quick access to special gaits
         public GaitMeta IdleGait;
-        public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? IdleGait; // Default to Idle if no fallback defined
+        public GaitMeta FallbackGait => CurrentGait.FallbackGait is null ? IdleGait : Gaits[CurrentGait.FallbackGait];
 
         float timeSinceLastGaitFatigue = 0f;
         protected ICoreAPI api;
@@ -67,24 +65,18 @@ namespace Jaunt.Behaviors
             capi = api as ICoreClientAPI;
 
             GaitMeta[] gaitarray = attributes["gaits"].AsArray<GaitMeta>();
-            SortedGaits = gaitarray
-                .OrderBy(g => g.Order)
-                .ToList();
+
+            foreach (GaitMeta gait in gaitarray)
+            {
+                Gaits[gait.Code] = gait;
+
+                gait.Sound ??= new AssetLocation("game:creature/hooved/" + gait.Code); // Default sound path if not defined
+                if (gait.IconTexture is not null) ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
+            }
             
             string idleGaitCode = attributes["idleGait"].AsString("idle");
-            IdleGait = SortedGaits.FirstOrDefault(g => g.Code == idleGaitCode, SortedGaits[0]);
+            IdleGait = Gaits[idleGaitCode];
             CurrentGait = IdleGait; // Set initial gait to Idle
-
-            List<AssetLocation> iconTextures = new();
-            foreach (var gait in SortedGaits)
-            {
-                // sounds
-                gait.Sound ??= new AssetLocation("game:creature/hooved/" + gait.Code); // Default sound path if not defined
-
-                // textures
-                if (gait.IconTexture is null) continue; // Skip if no icon texture defined
-                ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
-            }
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -95,7 +87,7 @@ namespace Jaunt.Behaviors
         }
 
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
-        
+
         public void SetIdle() => CurrentGait = IdleGait;
         public bool IsIdle => CurrentGait == IdleGait;
         public bool IsBackward => CurrentGait.Backwards;
