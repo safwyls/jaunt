@@ -55,48 +55,58 @@
 				{
 					"code": "walkback",
 					"order": 0,
+					"movespeedByType": {
+						"*-ferus": 0.013
+					},
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "jaunt:hud/walkback.svg"
+					"sound": "game:creature/hooved/trot"
 				},
 				{
 					"code": "idle",
 					"order": 1,
-					"turnRadius": 4,
-					"iconTexture": "jaunt:hud/idle.svg"
+					"turnRadius": 4
                 },
 				{
 					"code": "walk",
 					"order": 2,
+					"movespeedByType": {
+						"*-ferus": 0.013
+					},
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
-					"iconTexture": "jaunt:hud/walk.svg"
+					"iconTexture": "equus:hud/walk.svg"
 				},
 				{
                     "code": "trot",
 					"order": 3,
+					"movespeedByType": {
+						"*-ferus": 0.036
+					},
 					"turnRadius": 3,
 					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "jaunt:hud/trot.svg"
+					"fallbackGait": "walk"
                 },
 				{
 					"code": "canter",
 					"order": 4,
+					"movespeedByType": {
+						"*-ferus": 0.08475
+					},
 					"turnRadius": 2,
 					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "jaunt:hud/canter.svg"
+					"fallbackGait": "trot"
                 },
 				{
 					"code": "gallop",
 					"order": 5,
+					"movespeedByType": {
+						"*-ferus": 0.16
+					},
 					"turnRadius": 1.5,
 					"staminaCost": 0.2,
-					"sound": "game:creature/hooved/gallop",
-					"iconTexture": "jaunt:hud/gallop.svg"
+					"fallbackGait": "canter"
                 }
 			]
 		},
@@ -107,199 +117,14 @@
 					"mountOffsetByType": { "*adult-*-ferus": { "x":-0.1,"y":-0.4,"z":0},
 					"*": { "x":0,"y":-0.5,"z":0} } }
 			],
-            "gaitOrder": [
-                "walkback",
-                "idle",
-                "walk",
-                "trot",
-                "canter",
-                "gallop"
-            ],
 			"defaultGait": "idle",
+			"rideableGaitOrder": ["walkback", "idle", "walk", "trot", "canter", "gallop"],
 			"controls": {
-				"walkback": {
-					"animation": "walkback",
-					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.013
-						},
-						"animationSpeedByType": {
-							"*-ferus": 1.125,
-							"*": 1.125
-						},
-					"easeInSpeed": 1,
-					"easeOutSpeed": 3,
-					"blendMode": "Average",
-					"riderAnim": {
-						"animation": "rideelk-walk",
-						"animationSpeed": 1,
-						"weight": 1,
-						"withFpVariant": true,
-						"blendMode": "Average", 
-						"elementWeight": {
-							"LowerTorso": 80,
-							"UpperTorso": 80,
-							"UpperFootR": 80,
-							"UpperFootL": 80,
-							"LowerFootR": 80,
-							"LowerFootL": 80
-						},
-						"elementBlendMode": {
-							"LowerTorso": "Average",
-							"UpperTorso": "Average",
-							"UpperFootR": "Average",
-							"UpperFootL": "Average",
-							"LowerFootR": "Average",
-							"LowerFootL": "Average"
-						}
-					}
-				},
 				"idle": {
 					"weight": 1,
 					"riderAnim": {
 						"animation": "rideelk-idle",
 						"animationSpeed": 1,
-						"weight": 1,
-						"withFpVariant": true,
-						"blendMode": "Average", 
-						"elementWeight": {
-							"LowerTorso": 80,
-							"UpperTorso": 80,
-							"UpperFootR": 80,
-							"UpperFootL": 80,
-							"LowerFootR": 80,
-							"LowerFootL": 80
-						},
-						"elementBlendMode": {
-							"LowerTorso": "Average",
-							"UpperTorso": "Average",
-							"UpperFootR": "Average",
-							"UpperFootL": "Average",
-							"LowerFootR": "Average",
-							"LowerFootL": "Average"
-						}
-					}
-				},
-				"walk": {
-					"animation": "Walk",
-					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.013
-						},
-						"animationSpeedByType": {
-							"*-ferus": 1.125,
-							"*": 1.125
-						},
-					"blendMode": "Average",
-					"riderAnim": {
-						"animation": "rideelk-walk",
-						"animationSpeed": 1,
-						"weight": 1,	
-						"withFpVariant": true,
-						"blendMode": "Average", 
-						"elementWeight": {
-							"LowerTorso": 80,
-							"UpperTorso": 80,
-							"UpperFootR": 80,
-							"UpperFootL": 80,
-							"LowerFootR": 80,
-							"LowerFootL": 80
-						},
-						"elementBlendMode": {
-							"LowerTorso": "Average",
-							"UpperTorso": "Average",
-							"UpperFootR": "Average",
-							"UpperFootL": "Average",
-							"LowerFootR": "Average",
-							"LowerFootL": "Average"
-						}
-					}
-				},
-				"trot": {
-					"animation": "Trot",
-					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.035
-						},
-						"animationSpeedByType": {
-							"*-ferus": 2.5,
-							"*": 2.5
-						},
-					"blendMode": "Average",
-					"riderAnim": {
-						"animation": "rideelk-walk",
-						"animationSpeed": 1,
-						"weight": 1,	
-						"withFpVariant": true,
-						"blendMode": "Average", 
-						"elementWeight": {
-							"LowerTorso": 80,
-							"UpperTorso": 80,
-							"UpperFootR": 80,
-							"UpperFootL": 80,
-							"LowerFootR": 80,
-							"LowerFootL": 80
-						},
-						"elementBlendMode": {
-							"LowerTorso": "Average",
-							"UpperTorso": "Average",
-							"UpperFootR": "Average",
-							"UpperFootL": "Average",
-							"LowerFootR": "Average",
-							"LowerFootL": "Average"
-						}
-					}
-				},
-				"canter": {
-					"animation": "Canter",
-					"weight": 10,
-					"movespeedByType": {
-						"*-ferus": 0.07625
-					},
-					"animationSpeedByType": {
-						"*-ferus": 2.2,
-						"*": 2.2
-					},
-					"blendMode": "Average",
-					"riderAnim": {
-						"animation": "rideelk-run",
-						"animationSpeed": 1,
-						"weight": 1,
-						"withFpVariant": true,
-						"blendMode": "Average",
-						"elementWeight": {
-							"LowerTorso": 80,
-							"UpperTorso": 80,
-							"UpperFootR": 80,
-							"UpperFootL": 80,
-							"LowerFootR": 80,
-							"LowerFootL": 80
-						},
-						"elementBlendMode": {
-							"LowerTorso": "Average",
-							"UpperTorso": "Average",
-							"UpperFootR": "Average",
-							"UpperFootL": "Average",
-							"LowerFootR": "Average",
-							"LowerFootL": "Average"
-						}
-					}
-				},
-				"gallop": {
-					"animation": "Gallop",
-					"easeOutSpeed": 4,
-					"weight": 10,
-						"movespeedByType": {
-							"*-ferus": 0.12
-						},
-						"animationSpeedByType": {
-							"*-ferus": 3.1,
-							"*": 3
-						},
-					"blendMode": "Average",
-					"riderAnim": {
-						"animation": "rideelk-run",
-						"animationSpeed": 2,
 						"weight": 1,
 						"withFpVariant": true,
 						"blendMode": "Average", 
@@ -331,6 +156,174 @@
 						"animation": "rideelk-walk",
 						"animationSpeed": 1,
 						"weight": 1,	
+						"withFpVariant": true,
+						"blendMode": "Average", 
+						"elementWeight": {
+							"LowerTorso": 80,
+							"UpperTorso": 80,
+							"UpperFootR": 80,
+							"UpperFootL": 80,
+							"LowerFootR": 80,
+							"LowerFootL": 80
+						},
+						"elementBlendMode": {
+							"LowerTorso": "Average",
+							"UpperTorso": "Average",
+							"UpperFootR": "Average",
+							"UpperFootL": "Average",
+							"LowerFootR": "Average",
+							"LowerFootL": "Average"
+						}
+					}
+				},
+				"walk": {
+					"moveSpeedMultiplier": 1,
+					"animation": "Walk",
+					"weight": 10,
+					"animationSpeedByType": {
+						"*-ferus": 1.125,
+						"*": 1.125
+					},
+					"blendMode": "Average",
+					"riderAnim": {
+						"animation": "rideelk-walk",
+						"animationSpeed": 1,
+						"weight": 1,	
+						"withFpVariant": true,
+						"blendMode": "Average", 
+						"elementWeight": {
+							"LowerTorso": 80,
+							"UpperTorso": 80,
+							"UpperFootR": 80,
+							"UpperFootL": 80,
+							"LowerFootR": 80,
+							"LowerFootL": 80
+						},
+						"elementBlendMode": {
+							"LowerTorso": "Average",
+							"UpperTorso": "Average",
+							"UpperFootR": "Average",
+							"UpperFootL": "Average",
+							"LowerFootR": "Average",
+							"LowerFootL": "Average"
+						}
+					}
+				},
+				"trot": {
+					"moveSpeedMultiplier": 0.98,
+					"animation": "Trot",
+					"weight": 10,
+					"animationSpeedByType": {
+						"*-ferus": 2.5,
+						"*": 2.5
+					},
+					"blendMode": "Average",
+					"riderAnim": {
+						"animation": "rideelk-walk",
+						"animationSpeed": 1,
+						"weight": 1,	
+						"withFpVariant": true,
+						"blendMode": "Average", 
+						"elementWeight": {
+							"LowerTorso": 80,
+							"UpperTorso": 80,
+							"UpperFootR": 80,
+							"UpperFootL": 80,
+							"LowerFootR": 80,
+							"LowerFootL": 80
+						},
+						"elementBlendMode": {
+							"LowerTorso": "Average",
+							"UpperTorso": "Average",
+							"UpperFootR": "Average",
+							"UpperFootL": "Average",
+							"LowerFootR": "Average",
+							"LowerFootL": "Average"
+						}
+					}
+				},
+				"walkback": {
+					"moveSpeedMultiplier": 1,
+					"animation": "walkback",
+					"weight": 10,
+					"animationSpeedByType": {
+						"*-ferus": 1.125,
+						"*": 1.125
+					},
+					"easeInSpeed": 1,
+					"easeOutSpeed": 3,
+					"blendMode": "Average",
+					"riderAnim": {
+						"animation": "rideelk-walk",
+						"animationSpeed": 1,
+						"weight": 1,
+						"withFpVariant": true,
+						"blendMode": "Average", 
+						"elementWeight": {
+							"LowerTorso": 80,
+							"UpperTorso": 80,
+							"UpperFootR": 80,
+							"UpperFootL": 80,
+							"LowerFootR": 80,
+							"LowerFootL": 80
+						},
+						"elementBlendMode": {
+							"LowerTorso": "Average",
+							"UpperTorso": "Average",
+							"UpperFootR": "Average",
+							"UpperFootL": "Average",
+							"LowerFootR": "Average",
+							"LowerFootL": "Average"
+						}
+					}
+				},
+				"canter": {
+					"moveSpeedMultiplier": 0.85,
+					"animation": "Canter",
+					"weight": 10,
+					"animationSpeedByType": {
+						"*-ferus": 2.2,
+						"*": 2.2
+					},
+					"blendMode": "Average",
+					"riderAnim": {
+						"animation": "rideelk-run",
+						"animationSpeed": 1,
+						"weight": 1,
+						"withFpVariant": true,
+						"blendMode": "Average",
+						"elementWeight": {
+							"LowerTorso": 80,
+							"UpperTorso": 80,
+							"UpperFootR": 80,
+							"UpperFootL": 80,
+							"LowerFootR": 80,
+							"LowerFootL": 80
+						},
+						"elementBlendMode": {
+							"LowerTorso": "Average",
+							"UpperTorso": "Average",
+							"UpperFootR": "Average",
+							"UpperFootL": "Average",
+							"LowerFootR": "Average",
+							"LowerFootL": "Average"
+						}
+					}
+				},
+				"gallop": {
+					"moveSpeedMultiplier": 0.75,
+					"animation": "Gallop",
+					"easeOutSpeed": 4,
+					"weight": 10,
+					"animationSpeedByType": {
+						"*-ferus": 3.1,
+						"*": 3
+					},
+					"blendMode": "Average",
+					"riderAnim": {
+						"animation": "rideelk-run",
+						"animationSpeed": 2,
+						"weight": 1,
 						"withFpVariant": true,
 						"blendMode": "Average", 
 						"elementWeight": {
