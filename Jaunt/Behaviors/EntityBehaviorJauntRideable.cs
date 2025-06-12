@@ -615,6 +615,15 @@ namespace Jaunt.Behaviors
             SetIdle();
         }
 
+        public GaitMeta GetFirstForwardGait()
+        {
+            if (RideableGaitOrder == null || RideableGaitOrder.Count == 0)
+                return ebg.IdleGait;
+
+            // Find the first forward gait (Order > 1)
+            return RideableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleGait;
+        }
+
         public void StaminaGaitCheck(float dt)
         {
             if (api.Side != EnumAppSide.Server || ebs == null || ebg == null) return;
@@ -630,7 +639,7 @@ namespace Jaunt.Behaviors
 
                     if (isTired)
                     {
-                        var ffg = ebg.GetFirstForwardGait();
+                        var ffg = GetFirstForwardGait();
                         var lowGait = ffg.StaminaCost > 0 ? ebg.IdleGait : ffg;
 
                         ebg.CurrentGait = ebs.Stamina < 10 ? lowGait : ebg.FallbackGait;

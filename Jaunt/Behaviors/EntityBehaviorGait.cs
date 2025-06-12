@@ -45,7 +45,7 @@ namespace Jaunt.Behaviors
 
         // Quick access to special gaits
         public GaitMeta IdleGait => SortedGaits.FirstOrDefault(g => g.Order == 1);
-        public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? GetFirstForwardGait(); // Default to Idle if no fallback defined
+        public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? IdleGait; // Default to Idle if no fallback defined
 
         float timeSinceLastGaitFatigue = 0f;
         protected ICoreAPI api;
@@ -115,15 +115,6 @@ namespace Jaunt.Behaviors
                     });
                 }
             }
-        }
-
-        public GaitMeta GetFirstForwardGait()
-        {
-            if (SortedGaits == null || SortedGaits.Count == 0)
-                return IdleGait;
-
-            // Find the first forward gait (Order > 1)
-            return SortedGaits.FirstOrDefault(g => g.Order > 1) ?? IdleGait;
         }
 
         public override void OnGameTick(float dt)
