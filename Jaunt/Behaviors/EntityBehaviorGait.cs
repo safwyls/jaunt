@@ -31,7 +31,6 @@ namespace Jaunt.Behaviors
     public class EntityBehaviorGait : EntityBehavior
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
-        private static HudIconRenderer HudIconRenderer => ModSystem.hudIconRenderer;
         public override string PropertyName()
         {
             return $"{ModSystem.ModId}:gait";
@@ -83,10 +82,8 @@ namespace Jaunt.Behaviors
 
                 // textures
                 if (gait.IconTexture is null) continue; // Skip if no icon texture defined
-                iconTextures.Add(gait.IconTexture);
+                ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
             }
-
-            HudIconRenderer?.RegisterTextures(iconTextures);
         }
 
         public override void AfterInitialized(bool onFirstSpawn)

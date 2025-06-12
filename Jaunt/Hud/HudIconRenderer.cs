@@ -32,7 +32,10 @@ namespace Jaunt.Hud
         {
             List<AssetLocation> assetLocations = capi.Assets.GetLocations("textures/hud/", ModSystem.ModId);
 
-            RegisterTextures(assetLocations);
+            foreach (AssetLocation loc in assetLocations)
+            {
+                RegisterTexture(loc);
+            }
 
             // Generate empty texture.
             LoadedTexture empty = new(capi);
@@ -46,22 +49,19 @@ namespace Jaunt.Hud
             listenerId = capi.Event.RegisterGameTickListener(OnGameTick, 100);
         }
 
-        public void RegisterTextures(List<AssetLocation> textures)
+        public void RegisterTexture(AssetLocation assetLocation)
         {
-            foreach (var asset in textures)
-            {
-                var loc = asset.Clone().WithPathPrefixOnce("textures/");
-                if (texturesDict.ContainsKey(loc.ToNonNullString())) {
-                    continue;
-                }
-
-                LoadedTexture texture = new(capi);
-
-                var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
-                texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
-                if (texture is null) continue;
-                texturesDict.Add(loc.ToNonNullString(), texture);
+            var loc = assetLocation.Clone().WithPathPrefixOnce("textures/");
+            if (texturesDict.ContainsKey(loc.ToNonNullString())) {
+                return;
             }
+
+            LoadedTexture texture = new(capi);
+
+            var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
+            texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
+            if (texture is null) return;
+            texturesDict.Add(loc.ToNonNullString(), texture);
         }
 
         private bool CanRender()
