@@ -50,13 +50,17 @@ namespace Jaunt.Hud
         {
             foreach (var asset in textures)
             {
+                var loc = asset.Clone().WithPathPrefixOnce("textures/");
+                if (texturesDict.ContainsKey(loc.ToNonNullString())) {
+                    continue;
+                }
+
                 LoadedTexture texture = new(capi);
 
                 var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
-                var loc = asset.Clone().WithPathPrefixOnce("textures/");
                 texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
                 if (texture is null) continue;
-                if (!texturesDict.ContainsKey(loc.ToNonNullString())) texturesDict.Add(loc.ToNonNullString(), texture);
+                texturesDict.Add(loc.ToNonNullString(), texture);
             }
         }
 
