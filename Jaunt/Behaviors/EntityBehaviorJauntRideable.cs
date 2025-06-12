@@ -16,14 +16,6 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    public class JauntRideableConfig
-    {
-        public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
-        public int MinGeneration { get; set; } = 0; // Minimum generation for the animal to be rideable
-        public string DefaultGait { get; set; } = "idle"; // Default gait for the rideable entity, usually walk or idle
-        public List<string> RideableGaitOrder { get; set; } = new(); // List of gaits in order of increasing speed for the rideable entity
-    }
-
     public class JauntControlMeta : ControlMeta
     {
         public float MoveSpeedMultiplier { get; set; } = 0.7f; // Multiplier for the movement speed of the control
@@ -63,7 +55,11 @@ namespace Jaunt.Behaviors
         protected float timeSinceLastGaitCheck = 0;
         protected float timeSinceLastGaitFatigue = 0;
         protected ILoadedSound gaitSound;
-        protected new JauntRideableConfig rideableconfig;
+
+        protected Dictionary<string, JauntControlMeta> Controls = new Dictionary<string, JauntControlMeta>();
+        protected string DefaultGaitCode; // Default gait for the rideable entity, usually walk or idle
+        protected string[] GaitOrderCodes; // List of gaits in order of increasing speed for the rideable entity
+
         protected EntityBehaviorJauntStamina ebs;
         protected EntityBehaviorGait ebg;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
@@ -94,12 +90,14 @@ namespace Jaunt.Behaviors
 
             base.Initialize(properties, attributes);
 
-            rideableconfig = attributes.AsObject<JauntRideableConfig>();
-            minGeneration = rideableconfig.MinGeneration;
+            Controls = attributes["controls"].AsObject<Dictionary<string, JauntControlMeta>>();
+            minGeneration = attributes["minGeneration"].AsInt(0);
+            string[] GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
+            DefaultGaitCode = attributes["defaultGait"].AsString("idle");
 
-            foreach (var val in rideableconfig.Controls.Values) val.RiderAnim?.Init();
+            foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
-            curAnim = rideableconfig.Controls["idle"].RiderAnim;
+            curAnim = Controls["idle"].RiderAnim;
 
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
         }
@@ -117,9 +115,9 @@ namespace Jaunt.Behaviors
                 throw new Exception("EntityBehaviorGait not found on rideable entity. Ensure it is properly registered in the entity's properties.");
             }
 
-            DefaultGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.DefaultGait);
+            DefaultGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == DefaultGaitCode);
             ebg.CurrentGait = DefaultGait ?? ebg.IdleGait; // Fallback to Idle if DefaultGait is not found
-            foreach (var str in rideableconfig.RideableGaitOrder)
+            foreach (var str in GaitOrderCodes)
             {
                 GaitMeta gait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == str);
                 if (gait != null) RideableGaitOrder.Add(gait);
@@ -377,7 +375,7 @@ namespace Jaunt.Behaviors
             // This is called when jump ends
             if (wasMidJump && !IsInMidJump)
             {
-                var meta = rideableconfig.Controls["jump"];
+                var meta = Controls["jump"];
                 foreach (var seat in Seats) seat.Passenger?.AnimManager?.StopAnimation(meta.RiderAnim.Animation);
                 eagent.AnimManager.StopAnimation(meta.Animation);
             }
@@ -404,14 +402,14 @@ namespace Jaunt.Behaviors
             if (!shouldMove && !jumpNow)
             {
                 if (curControlMeta != null) Stop();
-                curAnim = rideableconfig.Controls[eagent.Swimming ? "swim" : "idle"].RiderAnim;
-                nowControlMeta = eagent.Swimming ? rideableconfig.Controls["swim"] : null;
+                curAnim = Controls[eagent.Swimming ? "swim" : "idle"].RiderAnim;
+                nowControlMeta = eagent.Swimming ? Controls["swim"] : null;
             }
             else
             {
-                nowControlMeta = rideableconfig.Controls.FirstOrDefault(c => c.Key == ebg.CurrentGait.Code).Value;
+                nowControlMeta = Controls.FirstOrDefault(c => c.Key == ebg.CurrentGait.Code).Value;
 
-                nowControlMeta = eagent.Swimming ? rideableconfig.Controls["swim"] : nowControlMeta;
+                nowControlMeta = eagent.Swimming ? Controls["swim"] : nowControlMeta;
                 eagent.Controls.Jump = jumpNow;
 
                 if (jumpNow)
@@ -421,7 +419,7 @@ namespace Jaunt.Behaviors
                     if (eagent.Properties.Client.Renderer is EntityShapeRenderer esr)
                         esr.LastJumpMs = capi.InWorldEllapsedMilliseconds;
 
-                    nowControlMeta = rideableconfig.Controls["jump"];
+                    nowControlMeta = Controls["jump"];
                     if (ForwardSpeed != 0) nowControlMeta.EaseOutSpeed = 30;
 
                     foreach (var seat in Seats) seat.Passenger?.AnimManager?.StartAnimation(nowControlMeta.RiderAnim);
@@ -462,7 +460,7 @@ namespace Jaunt.Behaviors
 
             gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            if (rideableconfig.Controls.TryGetValue(ebg.CurrentGait.Code, out JauntControlMeta controlMeta))
+            if (Controls.TryGetValue(ebg.CurrentGait.Code, out JauntControlMeta controlMeta))
             {
                 var gaitMeta = ebg.CurrentGait;
 
@@ -563,7 +561,7 @@ namespace Jaunt.Behaviors
             Stop();
 
             lastDismountTotalHours = entity.World.Calendar.TotalHours;
-            foreach (var meta in rideableconfig.Controls.Values)
+            foreach (var meta in Controls.Values)
             {
                 if (meta.RiderAnim?.Animation != null)
                 {
