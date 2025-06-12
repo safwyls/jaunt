@@ -51,7 +51,6 @@ namespace Jaunt.Behaviors
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
-        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
         public EntityBehaviorGait(Entity entity) : base(entity)
@@ -91,54 +90,10 @@ namespace Jaunt.Behaviors
             base.AfterInitialized(onFirstSpawn);
 
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
-            ebr = entity.GetBehavior<EntityBehaviorJauntRideable>();
-        }
-
-        public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
-        {
-            currentGait ??= CurrentGait;
-
-            if (ebr?.RideableGaitOrder is not null && ebr.RideableGaitOrder.Count > 0 && ebr.IsBeingControlled())
-            {
-                int currentIndex = ebr.RideableGaitOrder.IndexOf(currentGait);
-                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
-
-                // Boundary behavior
-                if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex >= ebr.RideableGaitOrder.Count) nextIndex = currentIndex - 1;
-
-                return ebr.RideableGaitOrder[nextIndex];
-            }
-            else
-            {
-                if (SortedGaits == null || SortedGaits.Count == 0)
-                    return IdleGait;
-
-                int currentIndex = SortedGaits.IndexOf(currentGait);
-                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
-
-                // Boundary behavior
-                if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex >= SortedGaits.Count) nextIndex = currentIndex - 1;
-
-                return SortedGaits[nextIndex];
-            }
-        }
-
-        public void SetNextGait(bool forward, GaitMeta nextGait = null)
-        {
-            if (api.Side != EnumAppSide.Server) return;
-
-            nextGait ??= GetNextGait(forward);
-
-            CurrentGait = nextGait;
         }
 
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
         
-        public void SpeedUp() => SetNextGait(true);                
-        public void SlowDown() => SetNextGait(false);
-        public void SetIdle() => CurrentGait = IdleGait;
         public bool IsIdle => CurrentGait == IdleGait;
         public bool IsBackward => CurrentGait == WalkbackGait;
         public bool IsForward => CurrentGait != WalkbackGait && CurrentGait != IdleGait;

@@ -174,7 +174,7 @@ namespace Jaunt.Behaviors
         private void Inventory_SlotModified(int obj)
         {
             UpdateControlScheme();
-            ebg.SetIdle();
+            SetIdle();
         }
 
         private void UpdateControlScheme()
@@ -199,6 +199,40 @@ namespace Jaunt.Behaviors
         #endregion Inventory and Control Scheme Management
 
         #region Motion Systems
+
+        public void SpeedUp() => SetNextGait(true);
+        public void SlowDown() => SetNextGait(false);
+        public void SetIdle() => ebg.CurrentGait = DefaultGait;
+
+        public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
+        {
+            currentGait ??= ebg.CurrentGait;
+
+            if (RideableGaitOrder is not null && RideableGaitOrder.Count > 0 && this.IsBeingControlled())
+            {
+                int currentIndex = RideableGaitOrder.IndexOf(currentGait);
+                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+
+                // Boundary behavior
+                if (nextIndex < 0) nextIndex = 0;
+                if (nextIndex >= ebg.SortedGaits.Count) nextIndex = currentIndex - 1;
+
+                return RideableGaitOrder[nextIndex];
+            }
+            else
+            {
+                return DefaultGait;
+            }
+        }
+
+        public void SetNextGait(bool forward, GaitMeta nextGait = null)
+        {
+            if (api.Side != EnumAppSide.Server) return;
+
+            nextGait ??= GetNextGait(forward);
+
+            ebg.CurrentGait = nextGait;
+        }
         
         public override Vec2d SeatsToMotion(float dt)
         {
@@ -298,15 +332,15 @@ namespace Jaunt.Behaviors
                 long nowMs = entity.World.ElapsedMilliseconds;
 
                 // This ensures we start moving without sprint key
-                if (forwardPressed && ebg.IsIdle) ebg.SpeedUp();                
+                if (forwardPressed && ebg.IsIdle) SpeedUp();                
 
                 // Handle backward to idle change without sprint key
-                if (forwardPressed && ebg.IsBackward) ebg.SetIdle();
+                if (forwardPressed && ebg.IsBackward) SetIdle();
 
                 // Cycle up with sprint
                 if (ebg.IsForward && sprintPressed && nowMs - lastGaitChangeMs > 300)
                 {
-                    ebg.SpeedUp();
+                    SpeedUp();
 
                     lastGaitChangeMs = nowMs;
                 }
@@ -314,7 +348,7 @@ namespace Jaunt.Behaviors
                 // Cycle down with back
                 if (backwardPressed && nowMs - lastGaitChangeMs > 300)
                 {
-                    ebg.SlowDown();
+                    SlowDown();
 
                     lastGaitChangeMs = nowMs;
                 }
@@ -539,7 +573,7 @@ namespace Jaunt.Behaviors
 
         public new void Stop()
         {
-            ebg.SetIdle();
+            SetIdle();
             eagent.Controls.StopAllMovement();
             eagent.Controls.WalkVector.Set(0, 0, 0);
             eagent.Controls.FlyVector.Set(0, 0, 0);
@@ -578,7 +612,7 @@ namespace Jaunt.Behaviors
         public new void DidMount(EntityAgent entityAgent)
         {
             UpdateControlScheme();
-            ebg?.SetIdle();
+            SetIdle();
         }
 
         public void StaminaGaitCheck(float dt)
