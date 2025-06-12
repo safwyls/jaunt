@@ -58,6 +58,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.013
 					},
+					"backwards": true,
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot"
@@ -66,7 +67,7 @@
 					"code": "idle",
 					"order": 1,
 					"turnRadius": 4
-                },
+				},
 				{
 					"code": "walk",
 					"order": 2,
@@ -79,7 +80,7 @@
 					"iconTexture": "equus:hud/walk.svg"
 				},
 				{
-                    "code": "trot",
+					"code": "trot",
 					"order": 3,
 					"movespeedByType": {
 						"*-ferus": 0.036
@@ -87,7 +88,7 @@
 					"turnRadius": 3,
 					"staminaCost": 0.0,
 					"fallbackGait": "walk"
-                },
+				},
 				{
 					"code": "canter",
 					"order": 4,
@@ -97,7 +98,7 @@
 					"turnRadius": 2,
 					"staminaCost": 0.0,
 					"fallbackGait": "trot"
-                },
+				},
 				{
 					"code": "gallop",
 					"order": 5,
@@ -107,7 +108,7 @@
 					"turnRadius": 1.5,
 					"staminaCost": 0.2,
 					"fallbackGait": "canter"
-                }
+				}
 			]
 		},
 		"jaunt:rideable": {

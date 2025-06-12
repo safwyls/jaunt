@@ -20,12 +20,13 @@ namespace Jaunt.Behaviors
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
         public int Order { get; set; } // The sequencing order for gaits, starting from backward to fastest forward
-        public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
-        public float MoveSpeed { get; set; } = 0f; // Base movement speed for this gait
-        public float StaminaCost { get; set; } = 0f; // Stamina cost for this control
-        public string FallbackGait { get; set; } // Fallback gait for fatiguing or other conditions
-        public AssetLocation Sound { get; set; } // Sound to play when this control is active
-        public AssetLocation IconTexture { get; set; } // Icon to display for this control
+        public float TurnRadius { get; set; } = 3.5f;
+        public float MoveSpeed { get; set; } = 0f;
+        public bool Backwards { get; set; } = false;
+        public float StaminaCost { get; set; } = 0f;
+        public string FallbackGait { get; set; } // Gait to slow down to such as when fatiguing
+        public AssetLocation Sound { get; set; }
+        public AssetLocation IconTexture { get; set; }
     }
 
     public class EntityBehaviorGait : EntityBehavior
@@ -43,7 +44,6 @@ namespace Jaunt.Behaviors
         }
 
         // Quick access to special gaits
-        public GaitMeta WalkbackGait => SortedGaits.FirstOrDefault(g => g.Order == 0);
         public GaitMeta IdleGait => SortedGaits.FirstOrDefault(g => g.Order == 1);
         public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? GetFirstForwardGait(); // Default to Idle if no fallback defined
 
@@ -95,8 +95,8 @@ namespace Jaunt.Behaviors
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
         
         public bool IsIdle => CurrentGait == IdleGait;
-        public bool IsBackward => CurrentGait == WalkbackGait;
-        public bool IsForward => CurrentGait != WalkbackGait && CurrentGait != IdleGait;
+        public bool IsBackward => CurrentGait.Backwards;
+        public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
         public void ApplyGaitFatigue(float dt)
         {
