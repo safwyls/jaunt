@@ -73,8 +73,7 @@
 					},
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot",
-					"iconTexture": "equus:hud/walk.svg"
+					"sound": "game:creature/hooved/trot"
 				},
 				{
 					"code": "trot",

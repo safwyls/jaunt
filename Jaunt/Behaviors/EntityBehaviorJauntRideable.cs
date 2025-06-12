@@ -90,7 +90,7 @@ namespace Jaunt.Behaviors
 
             Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
-            string[] GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
+            GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
