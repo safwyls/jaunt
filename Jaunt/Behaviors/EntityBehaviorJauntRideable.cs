@@ -55,7 +55,7 @@ namespace Jaunt.Behaviors
         protected float timeSinceLastGaitFatigue = 0;
         protected ILoadedSound gaitSound;
 
-        protected Dictionary<string, JauntControlMeta> Controls = new Dictionary<string, JauntControlMeta>();
+        protected FastSmallDictionary<string, JauntControlMeta> Controls;
         protected string[] GaitOrderCodes; // List of gaits in order of increasing speed for the rideable entity
 
         protected EntityBehaviorJauntStamina ebs;
@@ -88,7 +88,7 @@ namespace Jaunt.Behaviors
 
             base.Initialize(properties, attributes);
 
-            Controls = attributes["controls"].AsObject<Dictionary<string, JauntControlMeta>>();
+            Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
             string[] GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
 

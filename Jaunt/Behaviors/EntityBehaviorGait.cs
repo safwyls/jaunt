@@ -35,7 +35,7 @@ namespace Jaunt.Behaviors
         {
             return $"{ModSystem.ModId}:gait";
         }
-        public readonly Dictionary<string, GaitMeta> Gaits = new Dictionary<string, GaitMeta>();
+        public readonly FastSmallDictionary<string, GaitMeta> Gaits = new(1);
         public GaitMeta CurrentGait
         {
             get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
@@ -65,7 +65,6 @@ namespace Jaunt.Behaviors
             capi = api as ICoreClientAPI;
 
             GaitMeta[] gaitarray = attributes["gaits"].AsArray<GaitMeta>();
-
             foreach (GaitMeta gait in gaitarray)
             {
                 Gaits[gait.Code] = gait;
