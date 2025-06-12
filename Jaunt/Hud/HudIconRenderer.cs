@@ -8,6 +8,7 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.Common;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Hud
@@ -16,7 +17,7 @@ namespace Jaunt.Hud
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         private ICoreClientAPI capi;
-        private FastSmallDictionary<string, LoadedTexture> texturesDict = new(5);
+        private static readonly Dictionary<string, LoadedTexture> texturesDict = new();
         private LoadedTexture activeTexture;
         private long listenerId;
         public double RenderOrder => 1;
@@ -31,27 +32,32 @@ namespace Jaunt.Hud
         {
             List<AssetLocation> assetLocations = capi.Assets.GetLocations("textures/hud/", ModSystem.ModId);
 
-            foreach (var asset in assetLocations)
+            RegisterTextures(assetLocations);
+
+            // Generate empty texture.
+            LoadedTexture empty = new(capi);
+            ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
+
+            capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
+            surface.Dispose();
+
+            if (!texturesDict.ContainsKey("empty")) texturesDict.Add("empty", empty);
+
+            listenerId = capi.Event.RegisterGameTickListener(OnGameTick, 100);
+        }
+
+        public void RegisterTextures(List<AssetLocation> textures)
+        {
+            foreach (var asset in textures)
             {
                 LoadedTexture texture = new(capi);
 
-                string name = asset.GetName().Split('.')[0]; // Get the name without extension
-
                 var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
-                texture = capi.Gui.LoadSvg(asset, size, size, size, size, ColorUtil.WhiteArgb);
-                texturesDict.Add(name, texture);
+                var loc = asset.Clone().WithPathPrefixOnce("textures/");
+                texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
+                if (texture is null) continue;
+                if (!texturesDict.ContainsKey(loc.ToNonNullString())) texturesDict.Add(loc.ToNonNullString(), texture);
             }
-
-            // Generate empty texture.
-            LoadedTexture empty = new(this.capi);
-            ImageSurface surface = new ImageSurface(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
-
-            this.capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
-            surface.Dispose();
-
-            texturesDict.Add("empty", empty);
-
-            listenerId = this.capi.Event.RegisterGameTickListener(OnGameTick, 100);
         }
 
         private bool CanRender()
@@ -78,7 +84,19 @@ namespace Jaunt.Hud
 
             if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorGait>() is EntityBehaviorGait ebg)
             {
-                activeTexture = ebg.texturesDict[ebg.CurrentGait.Code] ?? texturesDict["empty"];
+                string key;
+                if (ebg.CurrentGait.IconTexture is null)
+                {
+                    // Try to build the matching jaunt texture path from the gait code
+                    var code = ebg.CurrentGait.Code.ToLowerInvariant();
+                    key = $"jaunt:textures/hud/{code}.svg";
+                }
+                else
+                {
+                    key = ebg.CurrentGait.IconTexture.Clone().WithPathPrefixOnce("textures/").ToNonNullString();
+                }
+
+                activeTexture = texturesDict.TryGetValue(key, out LoadedTexture value) ? value : texturesDict["empty"];
             }
             else
             {
