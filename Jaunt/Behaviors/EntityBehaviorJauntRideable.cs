@@ -27,7 +27,6 @@ namespace Jaunt.Behaviors
 
         #region Public
         
-        public GaitMeta DefaultGait; // Default gait for the rideable entity, usually walk or idle
         public List<GaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
 
         #endregion Public
@@ -57,7 +56,6 @@ namespace Jaunt.Behaviors
         protected ILoadedSound gaitSound;
 
         protected Dictionary<string, JauntControlMeta> Controls = new Dictionary<string, JauntControlMeta>();
-        protected string DefaultGaitCode; // Default gait for the rideable entity, usually walk or idle
         protected string[] GaitOrderCodes; // List of gaits in order of increasing speed for the rideable entity
 
         protected EntityBehaviorJauntStamina ebs;
@@ -93,7 +91,6 @@ namespace Jaunt.Behaviors
             Controls = attributes["controls"].AsObject<Dictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
             string[] GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
-            DefaultGaitCode = attributes["defaultGait"].AsString("idle");
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
@@ -115,8 +112,6 @@ namespace Jaunt.Behaviors
                 throw new Exception("EntityBehaviorGait not found on rideable entity. Ensure it is properly registered in the entity's properties.");
             }
 
-            DefaultGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == DefaultGaitCode);
-            ebg.CurrentGait = DefaultGait ?? ebg.IdleGait; // Fallback to Idle if DefaultGait is not found
             foreach (var str in GaitOrderCodes)
             {
                 GaitMeta gait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == str);
@@ -174,7 +169,7 @@ namespace Jaunt.Behaviors
         private void Inventory_SlotModified(int obj)
         {
             UpdateControlScheme();
-            SetIdle();
+            ebg.SetIdle();
         }
 
         private void UpdateControlScheme()
@@ -202,7 +197,6 @@ namespace Jaunt.Behaviors
 
         public void SpeedUp() => SetNextGait(true);
         public void SlowDown() => SetNextGait(false);
-        public void SetIdle() => ebg.CurrentGait = DefaultGait;
 
         public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
         {
@@ -221,7 +215,7 @@ namespace Jaunt.Behaviors
             }
             else
             {
-                return DefaultGait;
+                return ebg.IdleGait;
             }
         }
 
@@ -335,7 +329,7 @@ namespace Jaunt.Behaviors
                 if (forwardPressed && ebg.IsIdle) SpeedUp();                
 
                 // Handle backward to idle change without sprint key
-                if (forwardPressed && ebg.IsBackward) SetIdle();
+                if (forwardPressed && ebg.IsBackward) ebg.SetIdle();
 
                 // Cycle up with sprint
                 if (ebg.IsForward && sprintPressed && nowMs - lastGaitChangeMs > 300)
@@ -573,7 +567,7 @@ namespace Jaunt.Behaviors
 
         public new void Stop()
         {
-            SetIdle();
+            ebg.SetIdle();
             eagent.Controls.StopAllMovement();
             eagent.Controls.WalkVector.Set(0, 0, 0);
             eagent.Controls.FlyVector.Set(0, 0, 0);
@@ -612,7 +606,7 @@ namespace Jaunt.Behaviors
         public new void DidMount(EntityAgent entityAgent)
         {
             UpdateControlScheme();
-            SetIdle();
+            ebg.SetIdle();
         }
 
         public GaitMeta GetFirstForwardGait()

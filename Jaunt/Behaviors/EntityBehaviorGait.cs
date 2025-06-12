@@ -44,7 +44,7 @@ namespace Jaunt.Behaviors
         }
 
         // Quick access to special gaits
-        public GaitMeta IdleGait => SortedGaits.FirstOrDefault(g => g.Order == 1);
+        public GaitMeta IdleGait;
         public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? IdleGait; // Default to Idle if no fallback defined
 
         float timeSinceLastGaitFatigue = 0f;
@@ -71,6 +71,8 @@ namespace Jaunt.Behaviors
                 .OrderBy(g => g.Order)
                 .ToList();
             
+            string idleGaitCode = attributes["idleGait"].AsString("idle");
+            IdleGait = SortedGaits.FirstOrDefault(g => g.Code == idleGaitCode, SortedGaits[0]);
             CurrentGait = IdleGait; // Set initial gait to Idle
 
             List<AssetLocation> iconTextures = new();
@@ -94,6 +96,7 @@ namespace Jaunt.Behaviors
 
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
         
+        public void SetIdle() => CurrentGait = IdleGait;
         public bool IsIdle => CurrentGait == IdleGait;
         public bool IsBackward => CurrentGait.Backwards;
         public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
