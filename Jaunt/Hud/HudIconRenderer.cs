@@ -17,7 +17,7 @@ namespace Jaunt.Hud
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         private ICoreClientAPI capi;
-        private static readonly Dictionary<string, LoadedTexture> texturesDict = new();
+        private static readonly Dictionary<string, LoadedTexture> texturesDict = new FastSmallDictionary<string, LoadedTexture>();
         private LoadedTexture activeTexture;
         private long listenerId;
         public double RenderOrder => 1;
@@ -46,22 +46,19 @@ namespace Jaunt.Hud
             listenerId = capi.Event.RegisterGameTickListener(OnGameTick, 100);
         }
 
-        public void RegisterTextures(List<AssetLocation> textures)
+        public void RegisterTexture(AssetLocation assetLocation)
         {
-            foreach (var asset in textures)
-            {
-                var loc = asset.Clone().WithPathPrefixOnce("textures/");
-                if (texturesDict.ContainsKey(loc.ToNonNullString())) {
-                    continue;
-                }
-
-                LoadedTexture texture = new(capi);
-
-                var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
-                texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
-                if (texture is null) continue;
-                texturesDict.Add(loc.ToNonNullString(), texture);
+            assetLocation = assetLocation.Clone().WithPathPrefixOnce("textures/");
+            if (texturesDict.ContainsKey(loc.ToNonNullString())) {
+                return;
             }
+
+            LoadedTexture texture = new(capi);
+
+            var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
+            texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
+            if (texture is null) return;
+            texturesDict.Add(loc.ToNonNullString(), texture);
         }
 
         private bool CanRender()
