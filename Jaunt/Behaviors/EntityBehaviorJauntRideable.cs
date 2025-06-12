@@ -18,11 +18,15 @@ namespace Jaunt.Behaviors
 {
     public class JauntRideableConfig
     {
-        public Dictionary<string, ControlMeta> Controls { get; set; } = new Dictionary<string, ControlMeta>();
+        public Dictionary<string, JauntControlMeta> Controls { get; set; } = new Dictionary<string, JauntControlMeta>();
         public int MinGeneration { get; set; } = 0; // Minimum generation for the animal to be rideable
-        public string LowStaminaGait { get; set; } = "walk"; // Control code for low stamina state
-        public string ModerateStaminaGait { get; set; } = "walk"; // Control code for moderate stamina state
-        public string HighStaminaGait { get; set; } = "gallop"; // Control code for high stamina state
+        public string DefaultGait { get; set; } = "idle"; // Default gait for the rideable entity, usually walk or idle
+        public List<string> RideableGaitOrder { get; set; } = new(); // List of gaits in order of increasing speed for the rideable entity
+    }
+
+    public class JauntControlMeta : ControlMeta
+    {
+        public float MoveSpeedMultiplier { get; set; } = 0.7f; // Multiplier for the movement speed of the control
     }
 
     public class EntityBehaviorJauntRideable : EntityBehaviorRideable
@@ -31,9 +35,8 @@ namespace Jaunt.Behaviors
 
         #region Public
         
-        public GaitMeta LowStaminaGait;// Low stamina gait, usually walk or walkback
-        public GaitMeta ModerateStaminaGait; // Moderate stamina gait, usually trot or canter
-        public GaitMeta HighStaminaGait;// High stamina gait, usually gallop. Typically used for stamina drain
+        public GaitMeta DefaultGait; // Default gait for the rideable entity, usually walk or idle
+        public List<GaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
 
         #endregion Public
 
@@ -46,7 +49,7 @@ namespace Jaunt.Behaviors
         internal bool shouldMove = false;
         internal string curTurnAnim = null;
         internal string curSoundCode = null;
-        internal ControlMeta curControlMeta = null;
+        internal JauntControlMeta curControlMeta = null;
         internal EnumControlScheme scheme;
 
         #endregion Internal
@@ -98,7 +101,7 @@ namespace Jaunt.Behaviors
 
             curAnim = rideableconfig.Controls["idle"].RiderAnim;
 
-            capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");            
+            capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -114,9 +117,13 @@ namespace Jaunt.Behaviors
                 throw new Exception("EntityBehaviorGait not found on rideable entity. Ensure it is properly registered in the entity's properties.");
             }
 
-            LowStaminaGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.LowStaminaGait);
-            ModerateStaminaGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.ModerateStaminaGait);
-            HighStaminaGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.HighStaminaGait);
+            DefaultGait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == rideableconfig.DefaultGait);
+            ebg.CurrentGait = DefaultGait ?? ebg.IdleGait; // Fallback to Idle if DefaultGait is not found
+            foreach (var str in rideableconfig.RideableGaitOrder)
+            {
+                GaitMeta gait = ebg?.SortedGaits.FirstOrDefault(g => g.Code == str);
+                if (gait != null) RideableGaitOrder.Add(gait);
+            }
         }
         
         #endregion Initialization
@@ -377,7 +384,7 @@ namespace Jaunt.Behaviors
 
             eagent.Controls.Backward = ForwardSpeed < 0;
             eagent.Controls.Forward = ForwardSpeed >= 0;
-            eagent.Controls.Sprint = ebg.CurrentGait == HighStaminaGait && ForwardSpeed > 0;
+            eagent.Controls.Sprint = ebg.CurrentGait.StaminaCost > 0 && ForwardSpeed > 0;
 
             string nowTurnAnim = null;
             if (ForwardSpeed >= 0)
@@ -391,7 +398,7 @@ namespace Jaunt.Behaviors
                 eagent.StartAnimation((ForwardSpeed == 0 ? "idle-" : "") + (curTurnAnim = nowTurnAnim));
             }
 
-            ControlMeta nowControlMeta;
+            JauntControlMeta nowControlMeta;
 
             shouldMove = ForwardSpeed != 0;
             if (!shouldMove && !jumpNow)
@@ -455,7 +462,7 @@ namespace Jaunt.Behaviors
 
             gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            if (rideableconfig.Controls.TryGetValue(ebg.CurrentGait.Code, out ControlMeta controlMeta))
+            if (rideableconfig.Controls.TryGetValue(ebg.CurrentGait.Code, out JauntControlMeta controlMeta))
             {
                 var gaitMeta = ebg.CurrentGait;
 
@@ -585,17 +592,16 @@ namespace Jaunt.Behaviors
             // Check once a second
             if (timeSinceLastGaitCheck >= 1f)
             {
-                if (ebg.CurrentGait == HighStaminaGait && !eagent.Swimming)
+                if (ebg.CurrentGait.StaminaCost > 0 && !eagent.Swimming)
                 {
                     bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
 
                     if (isTired)
                     {
-                        ebg.CurrentGait = ebs.Stamina < 10 ? LowStaminaGait : ModerateStaminaGait;
-                    }
-                    else
-                    {
-                        ebg.CurrentGait = HighStaminaGait;
+                        var ffg = ebg.GetFirstForwardGait();
+                        var lowGait = ffg.StaminaCost > 0 ? ebg.IdleGait : ffg;
+
+                        ebg.CurrentGait = ebs.Stamina < 10 ? lowGait : ebg.FallbackGait;
                     }
                 }
 
@@ -638,7 +644,12 @@ namespace Jaunt.Behaviors
 
             if (shouldMove)
             {
-                Move(dt, eagent.Controls, curControlMeta.MoveSpeed);
+                // Adjust move speed based based on gait and control meta
+                var curMoveSpeed = curControlMeta.MoveSpeed > 0 
+                    ? curControlMeta.MoveSpeed 
+                    : ebg.CurrentGait.MoveSpeed * curControlMeta.MoveSpeedMultiplier;
+
+                Move(dt, eagent.Controls, curMoveSpeed);
             }
             else
             {

@@ -15,7 +15,8 @@ namespace Jaunt
     {
         private HudElementStaminaBar _staminaHud;
         private long customHudListenerId;
-        private HudIconRenderer hudIconRenderer;
+
+        internal HudIconRenderer hudIconRenderer;
 
         public string ModId => Mod.Info.ModID;
         public ILogger Logger => Mod.Logger;

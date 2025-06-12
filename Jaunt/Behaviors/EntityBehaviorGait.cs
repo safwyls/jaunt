@@ -1,4 +1,5 @@
 ﻿using Cairo;
+using Jaunt.Hud;
 using Jaunt.Systems;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,9 @@ namespace Jaunt.Behaviors
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
         public int Order { get; set; } // The sequencing order for gaits, starting from backward to fastest forward
         public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
+        public float MoveSpeed { get; set; } = 0f; // Base movement speed for this gait
         public float StaminaCost { get; set; } = 0f; // Stamina cost for this control
+        public string FallbackGait { get; set; } // Fallback gait for fatiguing or other conditions
         public AssetLocation Sound { get; set; } // Sound to play when this control is active
         public AssetLocation IconTexture { get; set; } // Icon to display for this control
     }
@@ -33,12 +36,12 @@ namespace Jaunt.Behaviors
     public class EntityBehaviorGait : EntityBehavior
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
+        private static HudIconRenderer HudIconRenderer => ModSystem.hudIconRenderer;
         public override string PropertyName()
         {
             return $"{ModSystem.ModId}:gait";
         }
         public List<GaitMeta> SortedGaits { get; private set; }
-        public Dictionary<string, LoadedTexture> texturesDict = new();
         public GaitMeta CurrentGait
         {
             get => SortedGaits.FirstOrDefault(g => g.Code == entity.WatchedAttributes.GetString("currentgait"));
@@ -48,12 +51,14 @@ namespace Jaunt.Behaviors
         // Quick access to special gaits
         public GaitMeta WalkbackGait => SortedGaits.FirstOrDefault(g => g.Order == 0);
         public GaitMeta IdleGait => SortedGaits.FirstOrDefault(g => g.Order == 1);
+        public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? GetFirstForwardGait(); // Default to Idle if no fallback defined
 
         float timeSinceLastGaitFatigue = 0f;
         protected GaitConfig gaitconfig;
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
+        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
         public EntityBehaviorGait(Entity entity) : base(entity)
@@ -76,54 +81,57 @@ namespace Jaunt.Behaviors
             
             CurrentGait = IdleGait; // Set initial gait to Idle
 
-            // Fetch custom gait icons
-            if (api is ICoreClientAPI)
+            List<AssetLocation> iconTextures = new();
+            foreach (var gait in SortedGaits)
             {
-                foreach (var gait in SortedGaits)
-                {
-                    if (gait.IconTexture is null) continue; // Skip if no icon texture defined
+                // sounds
+                gait.Sound ??= new AssetLocation("game:creature/hooved/" + gait.Code); // Default sound path if not defined
 
-                    LoadedTexture texture = new(capi);
-
-                    var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
-                    var loc = gait.IconTexture.Clone().WithPathPrefix("textures/");
-                    texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
-                    texturesDict.Add(gait.Code, texture);
-                }
-
-                // Generate empty texture.
-                LoadedTexture empty = new(capi);
-                ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
-
-                capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
-                surface.Dispose();
-
-                texturesDict.Add("empty", empty);
+                // textures
+                if (gait.IconTexture is null) continue; // Skip if no icon texture defined
+                iconTextures.Add(gait.IconTexture);
             }
+
+            HudIconRenderer?.RegisterTextures(iconTextures);
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
         {
             base.AfterInitialized(onFirstSpawn);
 
-            ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();            
+            ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
+            ebr = entity.GetBehavior<EntityBehaviorJauntRideable>();
         }
 
         public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
         {
             currentGait ??= CurrentGait;
 
-            if (SortedGaits == null || SortedGaits.Count == 0)
-                return IdleGait;
+            if (ebr?.RideableGaitOrder is not null && ebr.RideableGaitOrder.Count > 0 && ebr.IsBeingControlled())
+            {
+                int currentIndex = ebr.RideableGaitOrder.IndexOf(currentGait);
+                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
 
-            int currentIndex = SortedGaits.IndexOf(currentGait);
-            int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+                // Boundary behavior
+                if (nextIndex < 0) nextIndex = 0;
+                if (nextIndex >= ebr.RideableGaitOrder.Count) nextIndex = currentIndex - 1;
 
-            // Boundary behavior
-            if (nextIndex < 0) nextIndex = 0;
-            if (nextIndex >= SortedGaits.Count) nextIndex = currentIndex - 1;
+                return ebr.RideableGaitOrder[nextIndex];
+            }
+            else
+            {
+                if (SortedGaits == null || SortedGaits.Count == 0)
+                    return IdleGait;
 
-            return SortedGaits[nextIndex];
+                int currentIndex = SortedGaits.IndexOf(currentGait);
+                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+
+                // Boundary behavior
+                if (nextIndex < 0) nextIndex = 0;
+                if (nextIndex >= SortedGaits.Count) nextIndex = currentIndex - 1;
+
+                return SortedGaits[nextIndex];
+            }
         }
 
         public void SetNextGait(bool forward, GaitMeta nextGait = null)
@@ -178,17 +186,5 @@ namespace Jaunt.Behaviors
 
             ApplyGaitFatigue(dt);
         }
-
-        #region Disposal
-
-        public void Dispose()
-        {
-            foreach (var texture in texturesDict.Values)
-            {
-                texture.Dispose();
-            }
-        }
-
-        #endregion
     }
 }
