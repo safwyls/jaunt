@@ -16,11 +16,6 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    public class GaitConfig
-    {
-        public List<GaitMeta> Gaits { get; set; } = new();
-    }
-
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
@@ -54,7 +49,6 @@ namespace Jaunt.Behaviors
         public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? GetFirstForwardGait(); // Default to Idle if no fallback defined
 
         float timeSinceLastGaitFatigue = 0f;
-        protected GaitConfig gaitconfig;
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
@@ -74,8 +68,8 @@ namespace Jaunt.Behaviors
             api = entity.Api;
             capi = api as ICoreClientAPI;
 
-            gaitconfig = attributes.AsObject<GaitConfig>();
-            SortedGaits = gaitconfig.Gaits
+            GaitMeta[] gaitarray = attributes["gaits"].AsArray<GaitMeta>();
+            SortedGaits = gaitarray
                 .OrderBy(g => g.Order)
                 .ToList();
             
