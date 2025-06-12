@@ -19,13 +19,13 @@ namespace Jaunt.Behaviors
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
-        public int Order { get; set; } // The sequencing order for gaits, starting from backward to fastest forward
-        public float TurnRadius { get; set; } = 3.5f; // Turn radius for this control
-        public float MoveSpeed { get; set; } = 0f; // Base movement speed for this gait
-        public float StaminaCost { get; set; } = 0f; // Stamina cost for this control
-        public string FallbackGait { get; set; } // Fallback gait for fatiguing or other conditions
-        public AssetLocation Sound { get; set; } // Sound to play when this control is active
-        public AssetLocation IconTexture { get; set; } // Icon to display for this control
+        public float TurnRadius { get; set; } = 3.5f;
+        public float MoveSpeed { get; set; } = 0f;
+        public bool Backwards { get; set; } = false;
+        public float StaminaCost { get; set; } = 0f;
+        public string FallbackGait { get; set; } // Gait to slow down to such as when fatiguing
+        public AssetLocation Sound { get; set; }
+        public AssetLocation IconTexture { get; set; }
     }
 
     public class EntityBehaviorGait : EntityBehavior
@@ -35,23 +35,20 @@ namespace Jaunt.Behaviors
         {
             return $"{ModSystem.ModId}:gait";
         }
-        public List<GaitMeta> SortedGaits { get; private set; }
+        public readonly FastSmallDictionary<string, GaitMeta> Gaits = new(1);
         public GaitMeta CurrentGait
         {
-            get => SortedGaits.FirstOrDefault(g => g.Code == entity.WatchedAttributes.GetString("currentgait"));
+            get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
             set => entity.WatchedAttributes.SetString("currentgait", value.Code);
         }
 
-        // Quick access to special gaits
-        public GaitMeta WalkbackGait => SortedGaits.FirstOrDefault(g => g.Order == 0);
-        public GaitMeta IdleGait => SortedGaits.FirstOrDefault(g => g.Order == 1);
-        public GaitMeta FallbackGait => SortedGaits.FirstOrDefault(g => g.Code == CurrentGait.FallbackGait) ?? GetFirstForwardGait(); // Default to Idle if no fallback defined
+        public GaitMeta IdleGait;
+        public GaitMeta FallbackGait => CurrentGait.FallbackGait is null ? IdleGait : Gaits[CurrentGait.FallbackGait];
 
         float timeSinceLastGaitFatigue = 0f;
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
-        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
         public EntityBehaviorGait(Entity entity) : base(entity)
@@ -68,22 +65,17 @@ namespace Jaunt.Behaviors
             capi = api as ICoreClientAPI;
 
             GaitMeta[] gaitarray = attributes["gaits"].AsArray<GaitMeta>();
-            SortedGaits = gaitarray
-                .OrderBy(g => g.Order)
-                .ToList();
-            
-            CurrentGait = IdleGait; // Set initial gait to Idle
-
-            List<AssetLocation> iconTextures = new();
-            foreach (var gait in SortedGaits)
+            foreach (GaitMeta gait in gaitarray)
             {
-                // sounds
-                gait.Sound ??= new AssetLocation("game:creature/hooved/" + gait.Code); // Default sound path if not defined
+                Gaits[gait.Code] = gait;
 
-                // textures
-                if (gait.IconTexture is null) continue; // Skip if no icon texture defined
-                ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
+                gait.Sound ??= new AssetLocation("game:creature/hooved/" + gait.Code); // Default sound path if not defined
+                if (gait.IconTexture is not null) ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
             }
+            
+            string idleGaitCode = attributes["idleGait"].AsString("idle");
+            IdleGait = Gaits[idleGaitCode];
+            CurrentGait = IdleGait; // Set initial gait to Idle
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -91,57 +83,14 @@ namespace Jaunt.Behaviors
             base.AfterInitialized(onFirstSpawn);
 
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
-            ebr = entity.GetBehavior<EntityBehaviorJauntRideable>();
-        }
-
-        public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
-        {
-            currentGait ??= CurrentGait;
-
-            if (ebr?.RideableGaitOrder is not null && ebr.RideableGaitOrder.Count > 0 && ebr.IsBeingControlled())
-            {
-                int currentIndex = ebr.RideableGaitOrder.IndexOf(currentGait);
-                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
-
-                // Boundary behavior
-                if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex >= ebr.RideableGaitOrder.Count) nextIndex = currentIndex - 1;
-
-                return ebr.RideableGaitOrder[nextIndex];
-            }
-            else
-            {
-                if (SortedGaits == null || SortedGaits.Count == 0)
-                    return IdleGait;
-
-                int currentIndex = SortedGaits.IndexOf(currentGait);
-                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
-
-                // Boundary behavior
-                if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex >= SortedGaits.Count) nextIndex = currentIndex - 1;
-
-                return SortedGaits[nextIndex];
-            }
-        }
-
-        public void SetNextGait(bool forward, GaitMeta nextGait = null)
-        {
-            if (api.Side != EnumAppSide.Server) return;
-
-            nextGait ??= GetNextGait(forward);
-
-            CurrentGait = nextGait;
         }
 
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
-        
-        public void SpeedUp() => SetNextGait(true);                
-        public void SlowDown() => SetNextGait(false);
+
         public void SetIdle() => CurrentGait = IdleGait;
         public bool IsIdle => CurrentGait == IdleGait;
-        public bool IsBackward => CurrentGait == WalkbackGait;
-        public bool IsForward => CurrentGait != WalkbackGait && CurrentGait != IdleGait;
+        public bool IsBackward => CurrentGait.Backwards;
+        public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
         public void ApplyGaitFatigue(float dt)
         {
@@ -160,15 +109,6 @@ namespace Jaunt.Behaviors
                     });
                 }
             }
-        }
-
-        public GaitMeta GetFirstForwardGait()
-        {
-            if (SortedGaits == null || SortedGaits.Count == 0)
-                return IdleGait;
-
-            // Find the first forward gait (Order > 1)
-            return SortedGaits.FirstOrDefault(g => g.Order > 1) ?? IdleGait;
         }
 
         public override void OnGameTick(float dt)

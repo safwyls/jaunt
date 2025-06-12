@@ -32,9 +32,9 @@ namespace Jaunt.Hud
         {
             List<AssetLocation> assetLocations = capi.Assets.GetLocations("textures/hud/", ModSystem.ModId);
 
-            foreach (var assetLocation in assetLocations)
+            foreach (AssetLocation loc in assetLocations)
             {
-                RegisterTexture(assetLocation);
+                RegisterTexture(loc);
             }
 
             // Generate empty texture.
