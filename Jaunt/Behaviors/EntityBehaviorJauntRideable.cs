@@ -606,7 +606,7 @@ namespace Jaunt.Behaviors
         public new void DidMount(EntityAgent entityAgent)
         {
             UpdateControlScheme();
-            ebg.SetIdle();
+            ebg?.SetIdle();
         }
 
         public GaitMeta GetFirstForwardGait()
@@ -632,11 +632,8 @@ namespace Jaunt.Behaviors
                     bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
 
                     if (isTired)
-                    {
-                        var ffg = GetFirstForwardGait();
-                        var lowGait = ffg.StaminaCost > 0 ? ebg.IdleGait : ffg;
-
-                        ebg.CurrentGait = ebs.Stamina < 10 ? lowGait : ebg.FallbackGait;
+                    {                        
+                            ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackGait;
                     }
                 }
 

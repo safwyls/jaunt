@@ -82,7 +82,8 @@
 					},
 					"turnRadius": 3,
 					"staminaCost": 0.0,
-					"fallbackGait": "walk"
+					"fallbackGaitCode": "walk",
+					"sound": "game:creature/hooved/trot"
 				},
 				{
 					"code": "canter",
@@ -91,7 +92,8 @@
 					},
 					"turnRadius": 2,
 					"staminaCost": 0.0,
-					"fallbackGait": "trot"
+					"fallbackGaitCode": "trot",
+					"sound": "game:creature/hooved/trot"
 				},
 				{
 					"code": "gallop",
@@ -100,7 +102,8 @@
 					},
 					"turnRadius": 1.5,
 					"staminaCost": 0.2,
-					"fallbackGait": "canter"
+					"fallbackGaitCode": "canter",
+					"sound": "game:creature/hooved/gallop"
 				}
 			],
 			"idleGait": "idle"

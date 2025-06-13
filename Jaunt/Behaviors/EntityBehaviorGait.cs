@@ -23,7 +23,7 @@ namespace Jaunt.Behaviors
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
         public float StaminaCost { get; set; } = 0f;
-        public string FallbackGait { get; set; } // Gait to slow down to such as when fatiguing
+        public string FallbackGaitCode { get; set; } // Gait to slow down to such as when fatiguing
         public AssetLocation Sound { get; set; }
         public AssetLocation IconTexture { get; set; }
     }
@@ -43,7 +43,20 @@ namespace Jaunt.Behaviors
         }
 
         public GaitMeta IdleGait;
-        public GaitMeta FallbackGait => CurrentGait.FallbackGait is null ? IdleGait : Gaits[CurrentGait.FallbackGait];
+        public GaitMeta FallbackGait => CurrentGait.FallbackGaitCode is null ? IdleGait : Gaits[CurrentGait.FallbackGaitCode];
+        public GaitMeta CascadingFallbackGait(int n)
+        {
+            var result = CurrentGait;
+            
+            while (n > 0)
+            {
+                if (result.FallbackGaitCode is null) return IdleGait;
+                result = Gaits[result.FallbackGaitCode];
+                n--;
+            }
+
+            return result;
+        }
 
         float timeSinceLastGaitFatigue = 0f;
         protected ICoreAPI api;
