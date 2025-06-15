@@ -169,7 +169,7 @@ namespace Jaunt.Behaviors
         private void Inventory_SlotModified(int obj)
         {
             UpdateControlScheme();
-            ebg.SetIdle();
+            ebg?.SetIdle();
         }
 
         private void UpdateControlScheme()
