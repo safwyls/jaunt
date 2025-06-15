@@ -259,9 +259,9 @@ namespace Jaunt.Behaviors
             {
                 // 25% multiplier to convert per second regen to per quarter second regen
                 var staminaRegenPerQuarterSecond = 0.25f * staminaRegenRate;
-                if (ModSystem.Api.World.Calendar is not null)
+                if (ModSystem.api.World.Calendar is not null)
                 {
-                    var multiplierPerGameSec = elapsedTime * ModSystem.Api.World.Calendar.SpeedOfTime * ModSystem.Api.World.Calendar.CalendarSpeedMul;
+                    var multiplierPerGameSec = elapsedTime * ModSystem.api.World.Calendar.SpeedOfTime * ModSystem.api.World.Calendar.CalendarSpeedMul;
 
                     Stamina = Math.Min(stamina + (multiplierPerGameSec * staminaRegenPerQuarterSecond), maxStamina);
                     MarkDirty();
