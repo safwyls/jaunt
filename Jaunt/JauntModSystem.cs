@@ -15,7 +15,8 @@ namespace Jaunt
     {
         private HudElementStaminaBar _staminaHud;
         private long customHudListenerId;
-        private HudIconRenderer hudIconRenderer;
+
+        internal HudIconRenderer hudIconRenderer;
 
         public string ModId => Mod.Info.ModID;
         public ILogger Logger => Mod.Logger;
@@ -32,6 +33,7 @@ namespace Jaunt
             Instance = this;
             Api = api;
 
+            api.RegisterEntityBehaviorClass(ModId + ":gait", typeof(EntityBehaviorGait));
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
 

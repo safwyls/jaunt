@@ -5,7 +5,10 @@ using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
+using Vintagestory.Common;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Hud
@@ -14,7 +17,7 @@ namespace Jaunt.Hud
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         private ICoreClientAPI capi;
-        private FastSmallDictionary<string, LoadedTexture> texturesDict = new(5);
+        private static readonly FastSmallDictionary<string, LoadedTexture> texturesDict = new FastSmallDictionary<string, LoadedTexture>(6);
         private LoadedTexture activeTexture;
         private long listenerId;
         public double RenderOrder => 1;
@@ -29,26 +32,32 @@ namespace Jaunt.Hud
         {
             List<AssetLocation> assetLocations = capi.Assets.GetLocations("textures/hud/", ModSystem.ModId);
 
-            foreach (var asset in assetLocations)
+            foreach (AssetLocation loc in assetLocations)
             {
-                LoadedTexture texture = new(capi);
-
-                string name = asset.GetName().Split('.')[0]; // Get the name without extension
-
-                capi.Render.GetOrLoadTexture(asset, ref texture);
-                texturesDict.Add(name, texture);
+                RegisterTexture(loc);
             }
 
             // Generate empty texture.
-            LoadedTexture empty = new(this.capi);
-            ImageSurface surface = new ImageSurface(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
+            LoadedTexture empty = new(capi);
+            ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
 
-            this.capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
+            capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
             surface.Dispose();
 
-            texturesDict.Add("empty", empty);
+            if (!texturesDict.ContainsKey("empty")) texturesDict.Add("empty", empty);
 
-            listenerId = this.capi.Event.RegisterGameTickListener(OnGameTick, 100);
+            listenerId = capi.Event.RegisterGameTickListener(OnGameTick, 100);
+        }
+
+        public void RegisterTexture(AssetLocation assetLocation)
+        {
+            var loc = assetLocation.Clone().WithPathPrefixOnce("textures/");
+            if (texturesDict.ContainsKey(loc.ToNonNullString())) return;
+
+            var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
+            LoadedTexture texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
+            if (texture is null) return;
+            texturesDict.Add(loc.ToNonNullString(), texture);
         }
 
         private bool CanRender()
@@ -73,18 +82,21 @@ namespace Jaunt.Hud
         {
             EntityPlayer player = capi.World.Player.Entity;
 
-            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorRideable>() is EntityBehaviorJauntRideable ebr)
+            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorGait>() is EntityBehaviorGait ebg)
             {
-                activeTexture = ebr.CurrentGait switch
+                string key;
+                if (ebg.CurrentGait.IconTexture is null)
                 {
-                    GaitState.Walkback => ebr.texturesDict.TryGetValue("walkback", out LoadedTexture t) ? t : texturesDict["walkback"],
-                    GaitState.Idle => ebr.texturesDict.TryGetValue("idle", out LoadedTexture t) ? t : texturesDict["idle"],
-                    GaitState.Walk => ebr.texturesDict.TryGetValue("walk", out LoadedTexture t) ? t : texturesDict["walk"],
-                    GaitState.Trot => ebr.texturesDict.TryGetValue("trot", out LoadedTexture t) ? t : texturesDict["trot"],
-                    GaitState.Canter => ebr.texturesDict.TryGetValue("canter", out LoadedTexture t) ? t : texturesDict["canter"],
-                    GaitState.Gallop => ebr.texturesDict.TryGetValue("gallop", out LoadedTexture t) ? t : texturesDict["gallop"],
-                    _ => texturesDict["empty"]  
-                };
+                    // Try to build the matching jaunt texture path from the gait code
+                    var code = ebg.CurrentGait.Code.ToLowerInvariant();
+                    key = $"jaunt:textures/hud/{code}.svg";
+                }
+                else
+                {
+                    key = ebg.CurrentGait.IconTexture.Clone().WithPathPrefixOnce("textures/").ToNonNullString();
+                }
+
+                activeTexture = texturesDict.TryGetValue(key, out LoadedTexture value) ? value : texturesDict["empty"];
             }
             else
             {
