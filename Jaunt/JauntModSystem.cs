@@ -21,8 +21,8 @@ namespace Jaunt
 
         public string ModId => Mod.Info.ModID;
         public ILogger Logger => Mod.Logger;
-        public ICoreAPI Api { get; private set; }
-        public ICoreClientAPI ClientApi { get; private set; }
+        public ICoreAPI api { get; private set; }
+        public ICoreClientAPI capi { get; private set; }
         public JauntConfig Config { get; private set; }
         public static JauntModSystem Instance { get; private set; }
 
@@ -32,7 +32,7 @@ namespace Jaunt
         public override void Start(ICoreAPI api)
         {
             Instance = this;
-            Api = api;
+            this.api = api;
 
             api.RegisterEntityBehaviorClass(ModId + ":gait", typeof(EntityBehaviorGait));
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
@@ -48,7 +48,7 @@ namespace Jaunt
 
         public override void StartClientSide(ICoreClientAPI api)
         {
-            ClientApi = api;
+            capi = api;
 
             if (Config.EnableStamina)
             {
@@ -68,17 +68,17 @@ namespace Jaunt
 
             if (vanillaHudStatbar != null && vanillaHudStatbar.IsOpened())
             {
-                _staminaHud = new HudElementStaminaBar(ClientApi);
-                ClientApi.Event.RegisterGameTickListener(_staminaHud.OnGameTick, 1000);
-                ClientApi.Gui.RegisterDialog(_staminaHud);
+                _staminaHud = new HudElementStaminaBar(capi);
+                capi.Event.RegisterGameTickListener(_staminaHud.OnGameTick, 1000);
+                capi.Gui.RegisterDialog(_staminaHud);
 
-                ClientApi.Event.UnregisterGameTickListener(customHudListenerId);
+                capi.Event.UnregisterGameTickListener(customHudListenerId);
             }
         }
 
         private HudStatbar GetVanillaStatbarHud()
         {
-            foreach (var hud in ClientApi.Gui.OpenedGuis)
+            foreach (var hud in capi.Gui.OpenedGuis)
             {
                 if (hud is HudStatbar statbar)
                 {
