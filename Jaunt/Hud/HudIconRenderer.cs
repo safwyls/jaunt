@@ -93,7 +93,7 @@ namespace Jaunt.Hud
                 }
                 else
                 {
-                    key = ebg.CurrentGait.IconTexture.Clone().WithPathPrefixOnce("textures/").ToNonNullString();
+                    key = ebg.CurrentGait.IconTexture.WithPathPrefixOnce("textures/").ToNonNullString();
                 }
 
                 activeTexture = texturesDict.TryGetValue(key, out LoadedTexture value) ? value : texturesDict["empty"];
