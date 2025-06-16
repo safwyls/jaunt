@@ -35,7 +35,6 @@ namespace Jaunt.Behaviors
         ITreeAttribute StaminaTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
 
         private static string AttributeKey => $"{ModSystem.ModId}:stamina";
-        EntityPos prevPos = null;
         public bool ActivelyFatiguing { get; set; } = false;
 
         public bool Exhausted
@@ -191,7 +190,7 @@ namespace Jaunt.Behaviors
             timeSinceLastUpdate += dt;
             timeSinceLastLog += dt;
 
-            if (timeSinceLastLog > 1f)
+            if (timeSinceLastLog > 1f && DebugMode)
             {                
                 // Do some logging every second
 
