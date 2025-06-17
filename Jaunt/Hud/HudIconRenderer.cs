@@ -87,19 +87,7 @@ namespace Jaunt.Hud
 
             if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorGait>() is EntityBehaviorGait ebg)
             {
-                string key;
-                if (ebg.CurrentGait.IconTexture is null)
-                {
-                    // Try to build the matching jaunt texture path from the gait code
-                    var code = ebg.CurrentGait.Code.ToLowerInvariant();
-                    key = $"jaunt:textures/hud/{code}.svg";
-                }
-                else
-                {
-                    key = ebg.CurrentGait.IconTexture.ToNonNullString();
-                }
-
-                activeTexture = texturesDict.TryGetValue(key, out LoadedTexture value) ? value : texturesDict["empty"];
+                activeTexture = texturesDict.TryGetValue(ebg.CurrentGait.IconTexture, out LoadedTexture value) ? value : texturesDict["empty"];
             }
             else
             {
