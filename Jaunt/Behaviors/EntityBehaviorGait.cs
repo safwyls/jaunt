@@ -82,7 +82,6 @@ namespace Jaunt.Behaviors
             {
                 Gaits[gait.Code] = gait;
 
-                gait.Sound ??= new AssetLocation("game:creature/hooved/" + gait.Code); // Default sound path if not defined
                 if (gait.IconTexture is not null) ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
             }
             
