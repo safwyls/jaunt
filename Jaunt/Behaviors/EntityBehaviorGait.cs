@@ -81,6 +81,8 @@ namespace Jaunt.Behaviors
             foreach (GaitMeta gait in gaitarray)
             {
                 Gaits[gait.Code] = gait;
+                gait.IconTexture?.WithPathPrefixOnce("textures/");
+                gait.Sound?.WithPathPrefixOnce("sounds/");
 
                 if (gait.IconTexture is not null) ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
             }
