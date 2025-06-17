@@ -37,14 +37,17 @@ namespace Jaunt.Hud
                 RegisterTexture(loc);
             }
 
-            // Generate empty texture.
-            LoadedTexture empty = new(capi);
-            ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
+            if (!texturesDict.ContainsKey("empty"))
+            {
+                // Generate empty texture.
+                LoadedTexture empty = new(capi);
+                ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
 
-            capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
-            surface.Dispose();
+                capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
+                surface.Dispose();
 
-            if (!texturesDict.ContainsKey("empty")) texturesDict.Add("empty", empty);
+                texturesDict.Add("empty", empty);
+            }
 
             listenerId = capi.Event.RegisterGameTickListener(OnGameTick, 100);
         }
