@@ -42,11 +42,12 @@ namespace Jaunt.Behaviors
         internal string curSoundCode = null;
         internal JauntControlMeta curControlMeta = null;
         internal EnumControlScheme scheme;
+        internal bool wasSwimming = false;
 
         #endregion Internal
 
         #region Protected
-        
+
         protected static JauntModSystem ModSystem => JauntModSystem.Instance;
         protected long lastGaitChangeMs = 0;
         protected bool lastSprintPressed = false;
@@ -201,6 +202,8 @@ namespace Jaunt.Behaviors
         public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
         {
             currentGait ??= ebg.CurrentGait;
+
+            if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
 
             if (RideableGaitOrder is not null && RideableGaitOrder.Count > 0 && this.IsBeingControlled())
             {
@@ -407,6 +410,18 @@ namespace Jaunt.Behaviors
                 foreach (var seat in Seats) seat.Passenger?.AnimManager?.StopAnimation(meta.RiderAnim.Animation);
                 eagent.AnimManager.StopAnimation(meta.Animation);
             }
+
+            // Handle transition from swimming to walking
+            if (eagent.Swimming)
+            {
+                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
+            }
+            else if (!eagent.Swimming && wasSwimming)
+            {
+                ebg.CurrentGait = ebg.Gaits["walk"];
+            }
+
+            wasSwimming = eagent.Swimming;
 
             eagent.Controls.Backward = ForwardSpeed < 0;
             eagent.Controls.Forward = ForwardSpeed >= 0;
