@@ -47,6 +47,8 @@ namespace Jaunt.Hud
 
         public void RegisterTexture(AssetLocation assetLocation)
         {
+            if (assetLocation is null || assetLocation.Path == null || assetLocation.Path.Length == 0) return;
+
             var loc = assetLocation.Clone().WithPathPrefixOnce("textures/");
             if (texturesDict.ContainsKey(loc.ToNonNullString())) return;
 
