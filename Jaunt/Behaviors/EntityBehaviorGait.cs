@@ -81,8 +81,10 @@ namespace Jaunt.Behaviors
             foreach (GaitMeta gait in gaitarray)
             {
                 Gaits[gait.Code] = gait;
-
-                if (gait.IconTexture is not null) ModSystem.hudIconRenderer?.RegisterTexture(gait.IconTexture);
+                gait.IconTexture?.WithPathPrefixOnce("textures/");
+                gait.Sound?.WithPathPrefixOnce("sounds/");
+                
+                if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
             
             string idleGaitCode = attributes["idleGait"].AsString("idle");

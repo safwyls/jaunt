@@ -30,27 +30,25 @@ namespace Jaunt.Hud
 
         public void Initialize()
         {
-            List<AssetLocation> assetLocations = capi.Assets.GetLocations("textures/hud/", ModSystem.ModId);
-
-            foreach (AssetLocation loc in assetLocations)
+            if (!texturesDict.ContainsKey("empty"))
             {
-                RegisterTexture(loc);
+                // Generate empty texture.
+                LoadedTexture empty = new(capi);
+                ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
+
+                capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
+                surface.Dispose();
+
+                texturesDict.Add("empty", empty);
             }
-
-            // Generate empty texture.
-            LoadedTexture empty = new(capi);
-            ImageSurface surface = new(Format.Argb32, (int)ModSystem.Config.IconSize, (int)ModSystem.Config.IconSize);
-
-            capi.Gui.LoadOrUpdateCairoTexture(surface, true, ref empty);
-            surface.Dispose();
-
-            if (!texturesDict.ContainsKey("empty")) texturesDict.Add("empty", empty);
 
             listenerId = capi.Event.RegisterGameTickListener(OnGameTick, 100);
         }
 
         public void RegisterTexture(AssetLocation assetLocation)
         {
+            if (assetLocation is null || assetLocation.Path == null || assetLocation.Path.Length == 0) return;
+
             var loc = assetLocation.Clone().WithPathPrefixOnce("textures/");
             if (texturesDict.ContainsKey(loc.ToNonNullString())) return;
 
@@ -84,19 +82,7 @@ namespace Jaunt.Hud
 
             if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorGait>() is EntityBehaviorGait ebg)
             {
-                string key;
-                if (ebg.CurrentGait.IconTexture is null)
-                {
-                    // Try to build the matching jaunt texture path from the gait code
-                    var code = ebg.CurrentGait.Code.ToLowerInvariant();
-                    key = $"jaunt:textures/hud/{code}.svg";
-                }
-                else
-                {
-                    key = ebg.CurrentGait.IconTexture.WithPathPrefixOnce("textures/").ToNonNullString();
-                }
-
-                activeTexture = texturesDict.TryGetValue(key, out LoadedTexture value) ? value : texturesDict["empty"];
+                activeTexture = texturesDict.TryGetValue(ebg.CurrentGait.IconTexture, out LoadedTexture value) ? value : texturesDict["empty"];
             }
             else
             {

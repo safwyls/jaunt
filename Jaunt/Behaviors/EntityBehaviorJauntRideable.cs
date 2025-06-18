@@ -505,7 +505,7 @@ namespace Jaunt.Behaviors
 
                     gaitSound = capi.World.LoadSound(new SoundParams()
                     {
-                        Location = gaitMeta.Sound.Clone().WithPathPrefix("sounds/"),
+                        Location = gaitMeta.Sound,
                         DisposeOnFinish = false,
                         Position = entity.Pos.XYZ.ToVec3f(),
                         ShouldLoop = true
