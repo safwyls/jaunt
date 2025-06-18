@@ -84,7 +84,7 @@ namespace Jaunt.Behaviors
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
                 gait.Sound?.WithPathPrefixOnce("sounds/");
 
-                gait.IconTexture ??= AssetLocation.Create("textures/hud/{gait.Code}.svg", ModSystem.ModId);
+                gait.IconTexture ??= AssetLocation.Create($"textures/hud/{gait.Code}.svg", ModSystem.ModId);
                 if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
             
