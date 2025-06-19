@@ -436,7 +436,9 @@ namespace Jaunt.Behaviors
             if (nowTurnAnim != curTurnAnim)
             {
                 if (curTurnAnim != null) eagent.StopAnimation(curTurnAnim);
-                eagent.StartAnimation((ForwardSpeed == 0 ? "idle-" : "") + (curTurnAnim = nowTurnAnim));
+                var anim = (ForwardSpeed == 0 ? "idle-" : "") + nowTurnAnim;
+                curTurnAnim = anim;
+                eagent.StartAnimation(anim);
             }
 
             JauntControlMeta nowControlMeta;
@@ -452,7 +454,8 @@ namespace Jaunt.Behaviors
             {
                 nowControlMeta = Controls.FirstOrDefault(c => c.Key == ebg.CurrentGait.Code).Value;
 
-                nowControlMeta = eagent.Swimming ? Controls["swim"] : nowControlMeta;
+                nowControlMeta ??= Controls["idle"];
+
                 eagent.Controls.Jump = jumpNow;
 
                 if (jumpNow)
@@ -503,7 +506,7 @@ namespace Jaunt.Behaviors
 
             gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            if (Controls.TryGetValue(ebg.CurrentGait.Code, out JauntControlMeta controlMeta))
+            if (Controls.ContainsKey(ebg.CurrentGait.Code))
             {
                 var gaitMeta = ebg.CurrentGait;
 
