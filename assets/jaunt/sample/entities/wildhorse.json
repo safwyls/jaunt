@@ -51,6 +51,7 @@
 			"selectionBoxes": ["HeadAP","MidAP","MidUnderAP","RearSideAP","NeckAP", "RearAP","FaceAP"]
 		},
 		"jaunt:gait": {
+			"idleGait": "idle",
 			"gaits": [
 				{
 					"code": "walkback",
@@ -60,11 +61,13 @@
 					"backwards": true,
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot"
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "hud/walkback.svg"
 				},
 				{
 					"code": "idle",
-					"turnRadius": 4
+					"turnRadius": 4,
+					"iconTexture": "hud/idle.svg"
 				},
 				{
 					"code": "walk",
@@ -73,7 +76,8 @@
 					},
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
-					"sound": "game:creature/hooved/trot"
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "hud/walk.svg"
 				},
 				{
 					"code": "trot",
@@ -83,7 +87,8 @@
 					"turnRadius": 3,
 					"staminaCost": 0.0,
 					"fallbackGaitCode": "walk",
-					"sound": "game:creature/hooved/trot"
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "hud/trot.svg"
 				},
 				{
 					"code": "canter",
@@ -93,7 +98,8 @@
 					"turnRadius": 2,
 					"staminaCost": 0.0,
 					"fallbackGaitCode": "trot",
-					"sound": "game:creature/hooved/trot"
+					"sound": "game:creature/hooved/trot",
+					"iconTexture": "hud/canter.svg"
 				},
 				{
 					"code": "gallop",
@@ -103,10 +109,34 @@
 					"turnRadius": 1.5,
 					"staminaCost": 0.2,
 					"fallbackGaitCode": "canter",
-					"sound": "game:creature/hooved/gallop"
+					"sound": "game:creature/hooved/gallop",
+					"iconTexture": "hud/gallop.svg"
+				},
+				{
+					"code": "jump",
+					"movespeedByType": {
+						"*-ferus": 0.013
+					},
+					"turnRadius": 3.5,
+					"staminaCost": 0.0,
+					"sound": "game:creature/hooved/trot"
+				},
+				{
+					"code": "swim",
+					"movespeedByType": {
+						"*-ferus": 0.02
+					},
+					"turnRadius": 3.5
+				},
+				{
+					"code": "swimback",
+					"backwards": true,
+					"movespeedByType": {
+						"*-ferus": 0.015
+					},
+					"turnRadius": 3.5
 				}
-			],
-			"idleGait": "idle"
+			]
 		},
 		"jaunt:rideable": {
 			"interactMountAnySeat": true,
@@ -114,7 +144,7 @@
 				{ "apName": "Rider", "selectionBox": "MidAP", "bodyYawLimit": 0.2, "controllable": true,
 					"mountOffsetByType": { "*adult-*-ferus": { "x":-0.1,"y":-0.4,"z":0},
 					"*": { "x":0,"y":-0.5,"z":0} } }
-			],
+			],			
 			"rideableGaitOrder": ["walkback", "idle", "walk", "trot", "canter", "gallop"],
 			"controls": {
 				"idle": {
@@ -144,15 +174,45 @@
 					}
 				},
 				"swim": {
+					"moveSpeedMultiplier": 1,
 					"animation": "Swim",
 					"animationSpeed": 1,
-					"movespeed": 0.02,
 					"weight": 10,
 					"blendMode": "Average",
 					"riderAnim": {
 						"animation": "rideelk-walk",
 						"animationSpeed": 1,
-						"weight": 1,	
+						"weight": 1,
+						"withFpVariant": true,
+						"blendMode": "Average", 
+						"elementWeight": {
+							"LowerTorso": 80,
+							"UpperTorso": 80,
+							"UpperFootR": 80,
+							"UpperFootL": 80,
+							"LowerFootR": 80,
+							"LowerFootL": 80
+						},
+						"elementBlendMode": {
+							"LowerTorso": "Average",
+							"UpperTorso": "Average",
+							"UpperFootR": "Average",
+							"UpperFootL": "Average",
+							"LowerFootR": "Average",
+							"LowerFootL": "Average"
+						}
+					}
+				},
+				"swimback": {
+					"moveSpeedMultiplier": 1,
+					"animation": "Swim",
+					"animationSpeed": 1,
+					"weight": 10,
+					"blendMode": "Average",
+					"riderAnim": {
+						"animation": "rideelk-walk",
+						"animationSpeed": 1,
+						"weight": 1,
 						"withFpVariant": true,
 						"blendMode": "Average", 
 						"elementWeight": {
@@ -185,7 +245,7 @@
 					"riderAnim": {
 						"animation": "rideelk-walk",
 						"animationSpeed": 1,
-						"weight": 1,	
+						"weight": 1,
 						"withFpVariant": true,
 						"blendMode": "Average", 
 						"elementWeight": {
@@ -218,7 +278,7 @@
 					"riderAnim": {
 						"animation": "rideelk-walk",
 						"animationSpeed": 1,
-						"weight": 1,	
+						"weight": 1,
 						"withFpVariant": true,
 						"blendMode": "Average", 
 						"elementWeight": {
@@ -342,13 +402,13 @@
 					}
 				},
 				"jump": {
+					"moveSpeedMultiplier": 1,
 					"animation": "Jump",
 					"weight": 100,
 					"blendMode": "Average",
 					"animationSpeed": 1.4,
 					"easeOutSpeed": 40,
 					"easeInSpeed": 40,
-					"movespeed": 0.12,
 					"riderAnim": {
 						"animation": "rideelk-jump",
 						"animationSpeed": 1,
@@ -575,9 +635,9 @@
 					"*-adult-female-*": "equus:wildhorse-adult-male-{type}"},
 				"requiresNearbyEntityRange": 10,
 				"spawnQuantityMin": 1,
-				"spawnQuantityMaxByType": { "*": 2},
+				"spawnQuantityMaxByType": { "*": 1.005},
 				"pregnancyDaysByType": {
-					"*-ferus": 36
+					"*-ferus": 85
 				},
 				"multiplyCooldownDaysMinByType": { "*": 6},
 				"multiplyCooldownDaysMaxByType": { "*": 11},
@@ -591,7 +651,7 @@
 					"*-baby-*": true,
 					"*": false
 				},
-				"hoursToGrowByType": { "*": 432},
+				"hoursToGrowByType": { "*": 1200},
 				"adultEntityCodesByType": {
 					"*-baby-male-*": ["equus:wildhorse-adult-male-{type}"],
 					"*-baby-female-*": ["equus:wildhorse-adult-female-{type}"]
@@ -677,7 +737,7 @@
 						"animation": "Gallop",
 						"animationSpeed": 2
 					},
-										{
+					{
 						"code": "fleeentity",
 						"entityCodes": ["bear-*","hyena-*","wolf-*", "caninae-canina-adult-*","felinae-adult-*","machairodontinae-adult-*", "pantherinae-neofelis-adult-*", "pantherinae-panthera-adult-*","thylacoleonidae-adult-*"],
 						"priority": 1.7,
@@ -744,7 +804,7 @@
 						"stopOnHurt": true,
 						"whenNotInEmotionState": "aggressiveondamage|aggressivearoundentities|fleeondamage"
 					},
-										{
+					{
 						"code": "idle",
 						"animation": "Sit",
 						"priority": 1.6,
@@ -815,7 +875,6 @@
 						"wanderChanceByType": { "*-adult-*":0.1,"*":0.5},
 						"movespeedByType": {
 							"*-adult-*-ferus": 0.010,"*-baby-*-ferus": 0.010
-
 						},
 						"animationSpeedByType": {
 							"*-baby-*": 1.2,
@@ -857,7 +916,7 @@
 				},
 				"maxLightLevel": 7,
 				"lightLevelType": "onlyBlockLight",
-				"spawnCapPlayerScaling": 0.0,			
+				"spawnCapPlayerScaling": 0.0,
 				"groupSizeByType": {
 					"*-adult-female-ferus": { "dist": "uniform", "avg": 7, "var": 3 },
 					"*-adult-male-ferus": { "dist": "uniform", "avg": 3.5, "var": 2.5 }
@@ -877,7 +936,7 @@
 					"maxRain": 0.8,
 					"minForest": 0.0,
 					"maxForest": 0.6,
-					"maxShrubs": 0.9				
+					"maxShrubs": 0.9
 				},
 				"worldgen": {
 					"triesPerChunk": { "avg": 0.003, "var": 0}
