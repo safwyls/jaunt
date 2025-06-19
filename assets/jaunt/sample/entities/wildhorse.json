@@ -62,12 +62,12 @@
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
-					"iconTexture": "hud/walkback.svg"
+					"iconTexture": "jaunt:hud/walkback.svg"
 				},
 				{
 					"code": "idle",
 					"turnRadius": 4,
-					"iconTexture": "hud/idle.svg"
+					"iconTexture": "jaunt:hud/idle.svg"
 				},
 				{
 					"code": "walk",
@@ -77,7 +77,7 @@
 					"turnRadius": 3.5,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
-					"iconTexture": "hud/walk.svg"
+					"iconTexture": "jaunt:hud/walk.svg"
 				},
 				{
 					"code": "trot",
@@ -88,7 +88,7 @@
 					"staminaCost": 0.0,
 					"fallbackGaitCode": "walk",
 					"sound": "game:creature/hooved/trot",
-					"iconTexture": "hud/trot.svg"
+					"iconTexture": "jaunt:hud/trot.svg"
 				},
 				{
 					"code": "canter",
@@ -99,7 +99,7 @@
 					"staminaCost": 0.0,
 					"fallbackGaitCode": "trot",
 					"sound": "game:creature/hooved/trot",
-					"iconTexture": "hud/canter.svg"
+					"iconTexture": "jaunt:hud/canter.svg"
 				},
 				{
 					"code": "gallop",
@@ -110,7 +110,7 @@
 					"staminaCost": 0.2,
 					"fallbackGaitCode": "canter",
 					"sound": "game:creature/hooved/gallop",
-					"iconTexture": "hud/gallop.svg"
+					"iconTexture": "jaunt:hud/gallop.svg"
 				},
 				{
 					"code": "jump",
