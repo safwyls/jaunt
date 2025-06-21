@@ -49,13 +49,14 @@ namespace Jaunt.Hud
         {
             if (assetLocation is null || assetLocation.Path == null || assetLocation.Path.Length == 0) return;
 
-            var loc = assetLocation.Clone().WithPathPrefixOnce("textures/");
-            if (texturesDict.ContainsKey(loc.ToNonNullString())) return;
+            var loc = assetLocation.Clone().WithPathPrefixOnce("textures/").ToNonNullString();
+            if (texturesDict.ContainsKey(loc)) return;
 
             var size = (int)Math.Ceiling((int)ModSystem.Config.IconSize * RuntimeEnv.GUIScale);
             LoadedTexture texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
             if (texture is null) return;
-            texturesDict.Add(loc.ToNonNullString(), texture);
+
+            texturesDict.Add(loc, texture);            
         }
 
         private bool CanRender()
@@ -98,6 +99,7 @@ namespace Jaunt.Hud
             {
                 texture.Dispose();
             }
+            texturesDict.Clear();
         }
     }
 }
