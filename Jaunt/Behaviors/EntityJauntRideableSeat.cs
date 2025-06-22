@@ -10,6 +10,7 @@ namespace Jaunt.Behaviors
     {
         public EntityJauntRideableSeat(IMountable mountablesupplier, string seatId, SeatConfig config) : base(mountablesupplier, seatId, config)
         {
+            controls.OnAction = OnJauntControls;
         }
 
         public override bool CanMount(EntityAgent entityAgent)
@@ -69,6 +70,22 @@ namespace Jaunt.Behaviors
 
             ebr = Entity as IMountableListener;
             (ebr as EntityBehaviorJauntRideable)?.DidUnnmount(entityAgent);
+        }
+
+        public void OnJauntControls(EnumEntityAction action, bool on, ref EnumHandling handled)
+        {
+            if (action == EnumEntityAction.Sneak && on)
+            {
+                EntityAgent entityAgent = mountedEntity as EntityAgent;
+                if (entityAgent.Controls.IsFlying)
+                {
+                    // Descend
+                    return; // Don't unmount while flying
+                }
+
+                (Passenger as EntityAgent)?.TryUnmount();
+                controls.StopAllMovement();
+            }
         }
     }
 }
