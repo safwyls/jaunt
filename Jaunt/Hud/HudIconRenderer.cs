@@ -17,7 +17,7 @@ namespace Jaunt.Hud
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
         private ICoreClientAPI capi;
-        private static readonly FastSmallDictionary<string, LoadedTexture> texturesDict = new FastSmallDictionary<string, LoadedTexture>(6);
+        private FastSmallDictionary<string, LoadedTexture> texturesDict = new FastSmallDictionary<string, LoadedTexture>(6);
         private LoadedTexture activeTexture;
         private long listenerId;
         public double RenderOrder => 1;
@@ -99,7 +99,7 @@ namespace Jaunt.Hud
             {
                 texture.Dispose();
             }
-            texturesDict.Clear();
+            texturesDict = null;
         }
     }
 }
