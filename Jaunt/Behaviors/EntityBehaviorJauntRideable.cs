@@ -310,7 +310,21 @@ namespace Jaunt.Behaviors
                     lastJumpMs = entity.World.ElapsedMilliseconds;
                     jumpNow = true;
                 }
+                else if (controls.Jump && !entity.OnGround)
+                {
+                    eagent.Controls.IsFlying = true;
+                }
                 #endregion Jump Control
+
+                #region Flight Control
+
+                if (eagent.Controls.IsFlying)
+                {
+                    eagent.Controls.Down = controls.Sneak;
+                    eagent.Controls.Up = controls.Jump;
+                }
+
+                #endregion Flight Control
 
                 if (scheme == EnumControlScheme.Hold && !controls.TriesToMove) continue;
                 
@@ -580,6 +594,18 @@ namespace Jaunt.Behaviors
                 }
 
                 eagent.Pos.Motion.Y += (swimlineSubmergedness - 0.1) / 300.0;
+            }
+
+            if (controls.IsFlying)
+            {
+                controls.FlyVector.Set(controls.WalkVector);
+
+                controls.FlyVector.Y = controls.Up ? 5 * ebg.CurrentGait.MoveSpeed : controls.Down ? -5 * ebg.CurrentGait.MoveSpeed : 0;
+
+                if (entity.CollidedVertically || entity.FeetInLiquid)
+                {
+                    controls.IsFlying = false;
+                }
             }
         }
 
