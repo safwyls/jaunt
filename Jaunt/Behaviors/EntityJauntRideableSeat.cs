@@ -84,7 +84,8 @@ namespace Jaunt.Behaviors
                     (Passenger as EntityAgent)?.TryUnmount();
                     controls.StopAllMovement();
                 }
-            }
+            }            
+
             return;
         }
     }

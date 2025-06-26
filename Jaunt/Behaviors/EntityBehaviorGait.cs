@@ -43,6 +43,7 @@ namespace Jaunt.Behaviors
         }
 
         public GaitMeta IdleGait;
+        public GaitMeta IdleFlyingGait;
         public GaitMeta FallbackGait => CurrentGait.FallbackGaitCode is null ? IdleGait : Gaits[CurrentGait.FallbackGaitCode];
         public GaitMeta CascadingFallbackGait(int n)
         {
@@ -59,6 +60,7 @@ namespace Jaunt.Behaviors
         }
 
         float timeSinceLastGaitFatigue = 0f;
+        EntityAgent eagent => entity as EntityAgent;
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
@@ -88,8 +90,11 @@ namespace Jaunt.Behaviors
             }
             
             string idleGaitCode = attributes["idleGait"].AsString("idle");
+            string idleAirGaitCode = attributes["idleFlyingGait"].AsString("hover");
             IdleGait = Gaits[idleGaitCode];
-            CurrentGait = IdleGait; // Set initial gait to Idle
+            IdleFlyingGait = Gaits[idleAirGaitCode];
+
+            CurrentGait = eagent.Controls.IsFlying ? IdleFlyingGait : IdleGait; // Set initial gait to Idle
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -101,8 +106,8 @@ namespace Jaunt.Behaviors
 
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
 
-        public void SetIdle() => CurrentGait = IdleGait;
-        public bool IsIdle => CurrentGait == IdleGait;
+        public void SetIdle() => CurrentGait = eagent.Controls.IsFlying ? IdleFlyingGait : IdleGait;
+        public bool IsIdle => eagent.Controls.IsFlying ? CurrentGait == IdleFlyingGait : CurrentGait == IdleGait;
         public bool IsBackward => CurrentGait.Backwards;
         public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
