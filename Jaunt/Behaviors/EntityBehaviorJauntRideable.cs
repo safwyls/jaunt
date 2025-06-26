@@ -27,6 +27,7 @@ namespace Jaunt.Behaviors
 
         #region Public
         
+        public List<GaitMeta> FlyableGaitOrder = new(); // List of gaits in order of increasing speed for the flyable entity
         public List<GaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
 
         #endregion Public
@@ -57,7 +58,8 @@ namespace Jaunt.Behaviors
         protected ILoadedSound gaitSound;
 
         protected FastSmallDictionary<string, JauntControlMeta> Controls;
-        protected string[] GaitOrderCodes; // List of gaits in order of increasing speed for the rideable entity
+        protected string[] FlyableGaitOrderCodes; // List of gait codes in order of increasing speed for the flyable entity
+        protected string[] GaitOrderCodes; // List of gait codes in order of increasing speed for the rideable entity
 
         protected EntityBehaviorJauntStamina ebs;
         protected EntityBehaviorGait ebg;
@@ -92,6 +94,7 @@ namespace Jaunt.Behaviors
             Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
             GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
+            FlyableGaitOrderCodes = attributes["flyableGaitOrder"].AsArray<string>();
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
@@ -117,6 +120,12 @@ namespace Jaunt.Behaviors
             {
                 GaitMeta gait = ebg?.Gaits[str];
                 if (gait != null) RideableGaitOrder.Add(gait);
+            }
+
+            foreach (var str in FlyableGaitOrderCodes)
+            {
+                GaitMeta gait = ebg?.Gaits[str];
+                if (gait != null) FlyableGaitOrder.Add(gait);
             }
         }
         
@@ -156,6 +165,7 @@ namespace Jaunt.Behaviors
             }
         }
 
+        // Stop mounts from wandering off if mounted in last 24 hours (in game time)
         private bool TaskManager_OnShouldExecuteTask(IAiTask task)
         {
             if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24) return false;
@@ -205,20 +215,41 @@ namespace Jaunt.Behaviors
 
             if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
 
-            if (RideableGaitOrder is not null && RideableGaitOrder.Count > 0 && this.IsBeingControlled())
+            if (eagent.Controls.IsFlying)
             {
-                int currentIndex = RideableGaitOrder.IndexOf(currentGait);
-                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+                if (FlyableGaitOrder is not null && FlyableGaitOrder.Count > 0 && this.IsBeingControlled())
+                {
+                    int currentIndex = FlyableGaitOrder.IndexOf(currentGait);
+                    int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
 
-                // Boundary behavior
-                if (nextIndex < 0) nextIndex = 0;
-                if (nextIndex >= RideableGaitOrder.Count) nextIndex = currentIndex - 1;
+                    // Boundary behavior
+                    if (nextIndex < 0) nextIndex = 0;
+                    if (nextIndex >= FlyableGaitOrder.Count) nextIndex = currentIndex - 1;
 
-                return RideableGaitOrder[nextIndex];
+                    return FlyableGaitOrder[nextIndex];
+                }
+                else
+                {
+                    return ebg.IdleFlyingGait;
+                }
             }
             else
             {
-                return ebg.IdleGait;
+                if (RideableGaitOrder is not null && RideableGaitOrder.Count > 0 && this.IsBeingControlled())
+                {
+                    int currentIndex = RideableGaitOrder.IndexOf(currentGait);
+                    int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+
+                    // Boundary behavior
+                    if (nextIndex < 0) nextIndex = 0;
+                    if (nextIndex >= RideableGaitOrder.Count) nextIndex = currentIndex - 1;
+
+                    return RideableGaitOrder[nextIndex];
+                }
+                else
+                {
+                    return ebg.IdleGait;
+                }
             }
         }
 
@@ -333,7 +364,7 @@ namespace Jaunt.Behaviors
                 // Detect if button currently being pressed
                 bool nowForwards = controls.Forward;
                 bool nowBackwards = controls.Backward;
-                bool nowSprint = controls.CtrlKey;
+                bool nowSprint = controls.Sprint;
 
                 // Detect if current press is a fresh press
                 bool forwardPressed = nowForwards && !prevForwardKey;
@@ -461,14 +492,30 @@ namespace Jaunt.Behaviors
             if (!shouldMove && !jumpNow)
             {
                 if (curControlMeta != null) Stop();
-                curAnim = Controls[eagent.Swimming ? "swim" : "idle"].RiderAnim;
-                nowControlMeta = eagent.Swimming ? Controls["swim"] : null;
+                bool isSwimming = eagent.Swimming;
+                bool isFlying = eagent.Controls.IsFlying;
+                
+                if (isSwimming)
+                {
+                    curAnim = Controls["swim"].RiderAnim;
+                    nowControlMeta = Controls["swim"];
+                }
+                else if (isFlying)
+                {
+                    curAnim = Controls["hover"].RiderAnim;
+                    nowControlMeta = Controls["hover"];
+                }
+                else
+                {
+                    curAnim = Controls["idle"].RiderAnim;
+                    nowControlMeta = Controls["idle"];
+                }
             }
             else
             {
                 nowControlMeta = Controls.FirstOrDefault(c => c.Key == ebg.CurrentGait.Code).Value;
 
-                nowControlMeta ??= Controls["idle"];
+                //nowControlMeta ??= Controls["idle"];
 
                 eagent.Controls.Jump = jumpNow;
 
@@ -497,12 +544,19 @@ namespace Jaunt.Behaviors
             {
                 if (curControlMeta != null && curControlMeta.Animation != "jump")
                 {
+                    if (curControlMeta == Controls["idle"])
+                    {
+                        var test = "here";
+                    }
                     eagent.StopAnimation(curControlMeta.Animation);
                 }
 
                 curControlMeta = nowControlMeta;
                 if (DebugMode) ModSystem.Logger.Notification($"Side: {api.Side}, Meta: {nowControlMeta?.Code}");
-                if (nowControlMeta != null) eagent.AnimManager.StartAnimation(nowControlMeta);
+                if (nowControlMeta != null)
+                {
+                    eagent.AnimManager.StartAnimation(nowControlMeta);
+                }
             }
 
             if (api.Side == EnumAppSide.Server)
@@ -704,6 +758,16 @@ namespace Jaunt.Behaviors
         public override void OnGameTick(float dt)
         {
             timeSinceLastLog += dt;
+
+            if (timeSinceLastLog > 1)
+            {
+                foreach (var anim in entity.AnimManager.ActiveAnimationsByAnimCode)
+                {
+                    ModSystem.Logger.Notification($"Active animations: {anim.Key}");
+                }
+
+                timeSinceLastLog = 0;
+            }
 
             if (api.Side == EnumAppSide.Server)
             {
