@@ -35,7 +35,7 @@ namespace Jaunt.Behaviors
         #region Internal
 
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
-        internal bool prevForwardKey, prevBackwardKey, prevSprintKey;
+        internal bool prevForwardKey, prevBackwardKey, prevSprintKey, prevJumpKey;
         internal float notOnGroundAccum;
         internal string prevSoundCode;
         internal bool shouldMove = false;
@@ -261,6 +261,31 @@ namespace Jaunt.Behaviors
 
             ebg.CurrentGait = nextGait;
         }
+
+        public void AirToGround()
+        {
+            
+        }
+
+        public void GroundToAir()
+        {
+            eagent.Controls.IsFlying = true;
+
+            if (ebg.CurrentGait == ebg.Gaits["sprint"])
+            {
+                ebg.CurrentGait = ebg.Gaits["fly"];
+            }
+
+            if (ebg.CurrentGait == ebg.Gaits["walk"])
+            {
+                ebg.CurrentGait = ebg.Gaits["glide"];
+            }
+
+            if (ebg.CurrentGait == ebg.Gaits["idle"])
+            {
+                ebg.CurrentGait = ebg.Gaits["hover"];
+            }
+        }
         
         public override Vec2d SeatsToMotion(float dt)
         {
@@ -335,16 +360,22 @@ namespace Jaunt.Behaviors
                 #endregion
 
                 #region Jump Control
+                
+                bool nowJump = controls.Jump;
+                bool jumpPressed = controls.Jump && !prevJumpKey;
+
                 // Only able to jump every 1500ms. Only works while on the ground.
-                if (controls.Jump && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 && entity.Alive && (entity.OnGround || coyoteTimer > 0))
+                if (jumpPressed && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 && entity.Alive && (entity.OnGround || coyoteTimer > 0))
                 {
                     lastJumpMs = entity.World.ElapsedMilliseconds;
                     jumpNow = true;
                 }
-                else if (controls.Jump && !entity.OnGround)
+                else if (jumpPressed && !entity.OnGround)
                 {
-                    eagent.Controls.IsFlying = true;
+                    GroundToAir();
                 }
+                prevJumpKey = controls.Jump;
+
                 #endregion Jump Control
 
                 #region Flight Control
@@ -353,7 +384,14 @@ namespace Jaunt.Behaviors
                 {
                     eagent.Controls.Down = controls.Sneak;
                     eagent.Controls.Up = controls.Jump;
+
+                    if (eagent.Controls.Down)
+                    {
+                        bool airBelow = api.World.BlockAccessor.GetBlockBelow(entity.Pos.AsBlockPos).Code == "air";
+                        if (!airBelow) eagent.Controls.IsFlying = false;
+                    }
                 }
+
 
                 #endregion Flight Control
 
@@ -508,7 +546,7 @@ namespace Jaunt.Behaviors
                 else
                 {
                     curAnim = Controls["idle"].RiderAnim;
-                    nowControlMeta = Controls["idle"];
+                    nowControlMeta = null;//Controls["idle"];
                 }
             }
             else
@@ -544,10 +582,6 @@ namespace Jaunt.Behaviors
             {
                 if (curControlMeta != null && curControlMeta.Animation != "jump")
                 {
-                    if (curControlMeta == Controls["idle"])
-                    {
-                        var test = "here";
-                    }
                     eagent.StopAnimation(curControlMeta.Animation);
                 }
 
@@ -650,17 +684,8 @@ namespace Jaunt.Behaviors
                 eagent.Pos.Motion.Y += (swimlineSubmergedness - 0.1) / 300.0;
             }
 
-            if (controls.IsFlying)
-            {
-                controls.FlyVector.Set(controls.WalkVector);
-
-                controls.FlyVector.Y = controls.Up ? 5 * ebg.CurrentGait.MoveSpeed : controls.Down ? -5 * ebg.CurrentGait.MoveSpeed : 0;
-
-                if (entity.CollidedVertically || entity.FeetInLiquid)
-                {
-                    controls.IsFlying = false;
-                }
-            }
+            if (controls.IsFlying) controls.FlyVector.Set(controls.WalkVector);
+            
         }
 
         public new void Stop()
@@ -731,7 +756,7 @@ namespace Jaunt.Behaviors
 
                     if (isTired)
                     {                        
-                            ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackGait;
+                        ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackGait;
                     }
                 }
 
