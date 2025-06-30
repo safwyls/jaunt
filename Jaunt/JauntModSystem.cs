@@ -9,6 +9,7 @@ using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 using Vintagestory.Client.NoObf;
+using Vintagestory.GameContent;
 
 namespace Jaunt
 {
@@ -38,7 +39,7 @@ namespace Jaunt
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
 
-            ReloadConfig(api);
+            ReloadConfig();
         }
 
         public override void StartServerSide(ICoreServerAPI api)
@@ -108,7 +109,7 @@ namespace Jaunt
             return fatigue;
         }
 
-        public void ReloadConfig(ICoreAPI api)
+        public void ReloadConfig()
         {
             try
             {
