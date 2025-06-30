@@ -105,7 +105,7 @@ namespace Jaunt.Behaviors
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
-            curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
+            curAnim = Controls["idle"].RiderAnim;
 
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
         }
@@ -413,7 +413,6 @@ namespace Jaunt.Behaviors
                 {
                     eagent.Controls.Down = controls.Sneak && entity.Pos.Y > 0;
                     eagent.Controls.Up = controls.Jump && entity.Pos.Y < api.World.BlockAccessor.MapSizeY - 1;
-                    eagent.Pos.Roll = 0;
                     bool pitchDown = controls.Sneak && !controls.Jump;
                     bool pitchUp = controls.Jump && !controls.Sneak;
                     
@@ -423,11 +422,13 @@ namespace Jaunt.Behaviors
                     var normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
                     var climbSpeed = 1f + MathF.Sin(tiltAngle) * normalizedMoveSpeed * ebg.CurrentGait.YawMultiplier;
                     eagent.Controls.MovespeedMultiplier = climbSpeed;
-                    //ModSystem.Logger.Notification($"Norm Move Speed: {climbSpeed}");
+                    
                     if (eagent.Controls.MovespeedMultiplier == 0) eagent.Controls.MovespeedMultiplier = 1f;
                     
+                    // Commenting out this pitch stuff for now as it seems janky
                     if (pitchUp) entity.Pos.Roll = -tiltAngle;
                     else if (pitchDown) entity.Pos.Roll = tiltAngle;
+                    else entity.Pos.Roll = 0;
                     
                     if (eagent.Controls.Down)
                     {
