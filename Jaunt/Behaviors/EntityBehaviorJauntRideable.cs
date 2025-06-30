@@ -1,7 +1,4 @@
-﻿using Cairo;
-using Jaunt.Config;
-using Jaunt.Systems;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,6 +13,13 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
+    public enum TransitionEnum
+    {
+        landing,
+        takeoff,
+        none
+    }
+    
     public class JauntControlMeta : ControlMeta
     {
         public float MoveSpeedMultiplier { get; set; } = 0.7f; // Multiplier for the movement speed of the control
@@ -29,7 +33,8 @@ namespace Jaunt.Behaviors
         
         public List<GaitMeta> FlyableGaitOrder = new(); // List of gaits in order of increasing speed for the flyable entity
         public List<GaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
-
+        public bool CanFly => FlyableGaitOrder?.Count > 0;
+        
         #endregion Public
 
         #region Internal
@@ -39,7 +44,9 @@ namespace Jaunt.Behaviors
         internal float notOnGroundAccum;
         internal string prevSoundCode;
         internal bool shouldMove = false;
+        internal bool wasFlying = false;
         internal string curTurnAnim = null;
+        internal string curClimbAnim = null;
         internal string curSoundCode = null;
         internal JauntControlMeta curControlMeta = null;
         internal EnumControlScheme scheme;
@@ -51,7 +58,6 @@ namespace Jaunt.Behaviors
 
         protected static JauntModSystem ModSystem => JauntModSystem.Instance;
         protected long lastGaitChangeMs = 0;
-        protected bool lastSprintPressed = false;
         protected float timeSinceLastLog = 0;
         protected float timeSinceLastGaitCheck = 0;
         protected float timeSinceLastGaitFatigue = 0;
@@ -63,6 +69,7 @@ namespace Jaunt.Behaviors
 
         protected EntityBehaviorJauntStamina ebs;
         protected EntityBehaviorGait ebg;
+        protected EntityBehaviorHealth ebh;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
         protected static string AttributeKey => $"{ModSystem.ModId}:rideable";
 
@@ -98,7 +105,7 @@ namespace Jaunt.Behaviors
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
-            curAnim = Controls["idle"].RiderAnim;
+            curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
 
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
         }
@@ -109,6 +116,7 @@ namespace Jaunt.Behaviors
 
             ebs = eagent.GetBehavior<EntityBehaviorJauntStamina>();
             ebg = eagent.GetBehavior<EntityBehaviorGait>();
+            ebh = eagent.GetBehavior<EntityBehaviorHealth>();
 
             // Gaits are required for rideable entities
             if (ebg is null) 
@@ -122,10 +130,18 @@ namespace Jaunt.Behaviors
                 if (gait != null) RideableGaitOrder.Add(gait);
             }
 
-            foreach (var str in FlyableGaitOrderCodes)
+            if (FlyableGaitOrderCodes is not null && FlyableGaitOrderCodes.Length > 0)
             {
-                GaitMeta gait = ebg?.Gaits[str];
-                if (gait != null) FlyableGaitOrder.Add(gait);
+                foreach (var str in FlyableGaitOrderCodes)
+                {
+                    GaitMeta gait = ebg?.Gaits[str];
+                    if (gait != null) FlyableGaitOrder.Add(gait);
+                }   
+            }
+
+            if (ebh is not null)
+            {
+                ebh.onDamaged += (dmg, dmgSource) => HandleDamaged(eagent, dmg, dmgSource);
             }
         }
         
@@ -170,7 +186,7 @@ namespace Jaunt.Behaviors
         {
             if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24) return false;
 
-            return !Seats.Any(seat => seat.Passenger != null);
+            return Seats.All(seat => seat.Passenger == null);
         }
 
         #endregion AI Task Management
@@ -209,12 +225,42 @@ namespace Jaunt.Behaviors
         public void SpeedUp() => SetNextGait(true);
         public void SlowDown() => SetNextGait(false);
 
-        public GaitMeta GetNextGait(bool forward, GaitMeta currentGait = null)
+        public GaitMeta TranslateGait(GaitMeta gait, TransitionEnum transition)
+        {
+            switch (transition)
+            {
+                case TransitionEnum.landing:
+                    if (ebg.IsIdle) return ebg.IdleGait;
+                    return RideableGaitOrder.FirstOrDefault(g => 
+                        g.MoveSpeed >= gait.MoveSpeed 
+                        && g.Backwards == gait.Backwards) 
+                           ?? (gait.Backwards 
+                               ? RideableGaitOrder.FirstOrDefault()
+                               : RideableGaitOrder.LastOrDefault());
+                case TransitionEnum.takeoff:
+                    if (ebg.IsIdle) return ebg.IdleFlyingGait;
+                    return FlyableGaitOrder.FirstOrDefault(g => 
+                        g.MoveSpeed >= gait.MoveSpeed 
+                        && g.Backwards == gait.Backwards) 
+                           ?? (gait.Backwards 
+                               ? FlyableGaitOrder.FirstOrDefault() 
+                               : FlyableGaitOrder.LastOrDefault());
+                case TransitionEnum.none:
+                default:
+                    return gait;
+            }
+        }
+       
+        public GaitMeta GetNextGait(bool forward = true, TransitionEnum transition = TransitionEnum.none, GaitMeta currentGait = null)
         {
             currentGait ??= ebg.CurrentGait;
-
+            
+            // Transition gaits when landing or taking off
+            if (transition != TransitionEnum.none) return TranslateGait(currentGait, transition);
+            
+            // Eventually this should be changed to allow for more advanced swimming gaits
             if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
-
+            
             if (eagent.Controls.IsFlying)
             {
                 if (FlyableGaitOrder is not null && FlyableGaitOrder.Count > 0 && this.IsBeingControlled())
@@ -233,58 +279,46 @@ namespace Jaunt.Behaviors
                     return ebg.IdleFlyingGait;
                 }
             }
+
+            if (RideableGaitOrder is not null && RideableGaitOrder.Count > 0 && this.IsBeingControlled())
+            {
+                int currentIndex = RideableGaitOrder.IndexOf(currentGait);
+                int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+
+                // Boundary behavior
+                if (nextIndex < 0) nextIndex = 0;
+                if (nextIndex >= RideableGaitOrder.Count) nextIndex = currentIndex - 1;
+
+                return RideableGaitOrder[nextIndex];
+            }
             else
             {
-                if (RideableGaitOrder is not null && RideableGaitOrder.Count > 0 && this.IsBeingControlled())
-                {
-                    int currentIndex = RideableGaitOrder.IndexOf(currentGait);
-                    int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
-
-                    // Boundary behavior
-                    if (nextIndex < 0) nextIndex = 0;
-                    if (nextIndex >= RideableGaitOrder.Count) nextIndex = currentIndex - 1;
-
-                    return RideableGaitOrder[nextIndex];
-                }
-                else
-                {
-                    return ebg.IdleGait;
-                }
+                return ebg.IdleGait;
             }
         }
 
-        public void SetNextGait(bool forward, GaitMeta nextGait = null)
+        public void SetNextGait(bool forward, TransitionEnum transition = TransitionEnum.none, GaitMeta nextGait = null)
         {
             if (api.Side != EnumAppSide.Server) return;
 
-            nextGait ??= GetNextGait(forward);
+            nextGait ??= GetNextGait(forward, transition);
 
             ebg.CurrentGait = nextGait;
         }
 
         public void AirToGround()
         {
-            
+            entity.Pos.Roll = 0;
+            eagent.Controls.IsFlying = false;
+            eagent.Controls.Down = eagent.Controls.Up = false;
+            SetNextGait(true, transition: TransitionEnum.landing);   
         }
 
         public void GroundToAir()
         {
+            if (!CanFly) return;
             eagent.Controls.IsFlying = true;
-
-            if (ebg.CurrentGait == ebg.Gaits["sprint"])
-            {
-                ebg.CurrentGait = ebg.Gaits["fly"];
-            }
-
-            if (ebg.CurrentGait == ebg.Gaits["walk"])
-            {
-                ebg.CurrentGait = ebg.Gaits["glide"];
-            }
-
-            if (ebg.CurrentGait == ebg.Gaits["idle"])
-            {
-                ebg.CurrentGait = ebg.Gaits["hover"];
-            }
+            SetNextGait(true, transition: TransitionEnum.takeoff);
         }
         
         public override Vec2d SeatsToMotion(float dt)
@@ -298,7 +332,6 @@ namespace Jaunt.Behaviors
             coyoteTimer -= dt;
 
             Controller = null;
-
             foreach (var seat in Seats)
             {
                 if (entity.OnGround) coyoteTimer = 0.15f;
@@ -317,24 +350,22 @@ namespace Jaunt.Behaviors
 
                 #region Can Ride/Turn Checks
                 var controls = seat.Controls;
-                bool canride = true;
-                bool canturn = true;
+                bool canRide = true;
+                bool canTurn = true;
 
                 var canRideField = typeof(EntityBehaviorRideable).GetField("CanRide", BindingFlags.NonPublic | BindingFlags.Instance);
                 CanRideDelegate canRideEvent = (CanRideDelegate)canRideField.GetValue(this);
                 if (canRideEvent != null && (controls.Jump || controls.TriesToMove))
                 {
-                    foreach (CanRideDelegate dele in canRideEvent.GetInvocationList().Cast<CanRideDelegate>())
+                    foreach (var dele in canRideEvent.GetInvocationList().Cast<CanRideDelegate>())
                     {
-                        if (!dele(seat, out string errMsg))
+                        if (dele(seat, out string errMsg)) continue;
+                        if (capi != null && seat.Passenger == capi.World.Player.Entity)
                         {
-                            if (capi != null && seat.Passenger == capi.World.Player.Entity)
-                            {
-                                capi.TriggerIngameError(this, "cantride", Lang.Get("cantride-" + errMsg));
-                            }
-                            canride = false;
-                            break;
+                            capi.TriggerIngameError(this, "cantride", Lang.Get("cantride-" + errMsg));
                         }
+                        canRide = false;
+                        break;
                     }
                 }
 
@@ -342,26 +373,23 @@ namespace Jaunt.Behaviors
                 CanRideDelegate canTurnEvent = (CanRideDelegate)canTurnField.GetValue(this);
                 if (canTurnEvent != null && (controls.Left || controls.Right))
                 {
-                    foreach (CanRideDelegate dele in canTurnEvent.GetInvocationList())
+                    foreach (var dele in canTurnEvent.GetInvocationList().Cast<CanRideDelegate>())
                     {
-                        if (!dele(seat, out string errMsg))
+                        if (dele(seat, out string errMsg)) continue;
+                        if (capi != null && seat.Passenger == capi.World.Player.Entity)
                         {
-                            if (capi != null && seat.Passenger == capi.World.Player.Entity)
-                            {
-                                capi.TriggerIngameError(this, "cantride", Lang.Get("cantride-" + errMsg));
-                            }
-                            canturn = false;
-                            break;
+                            capi.TriggerIngameError(this, "cantride", Lang.Get("cantride-" + errMsg));
                         }
+                        canTurn = false;
+                        break;
                     }
                 }
 
-                if (!canride) continue;
+                if (!canRide) continue;
                 #endregion
 
                 #region Jump Control
                 
-                bool nowJump = controls.Jump;
                 bool jumpPressed = controls.Jump && !prevJumpKey;
 
                 // Only able to jump every 1500ms. Only works while on the ground.
@@ -374,24 +402,39 @@ namespace Jaunt.Behaviors
                 {
                     GroundToAir();
                 }
+                
                 prevJumpKey = controls.Jump;
 
                 #endregion Jump Control
 
-                #region Flight Control
+                #region Flight Ascension/Descension Control
 
                 if (eagent.Controls.IsFlying)
                 {
-                    eagent.Controls.Down = controls.Sneak;
-                    eagent.Controls.Up = controls.Jump;
-
+                    eagent.Controls.Down = controls.Sneak && entity.Pos.Y > 0;
+                    eagent.Controls.Up = controls.Jump && entity.Pos.Y < api.World.BlockAccessor.MapSizeY - 1;
+                    eagent.Pos.Roll = 0;
+                    bool pitchDown = controls.Sneak && !controls.Jump;
+                    bool pitchUp = controls.Jump && !controls.Sneak;
+                    
+                    // This gives a linear tilt angled from 6 to 30 degrees at yaw multiplier of 4 down to 0
+                    float tiltAngle = GameMath.DEG2RAD * (ebg.CurrentGait.YawMultiplier / 5 * 30f); // Tilt angle for the flight control
+                    
+                    var normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
+                    var climbSpeed = 1f + MathF.Sin(tiltAngle) * normalizedMoveSpeed * ebg.CurrentGait.YawMultiplier;
+                    eagent.Controls.MovespeedMultiplier = climbSpeed;
+                    //ModSystem.Logger.Notification($"Norm Move Speed: {climbSpeed}");
+                    if (eagent.Controls.MovespeedMultiplier == 0) eagent.Controls.MovespeedMultiplier = 1f;
+                    
+                    if (pitchUp) entity.Pos.Roll = -tiltAngle;
+                    else if (pitchDown) entity.Pos.Roll = tiltAngle;
+                    
                     if (eagent.Controls.Down)
                     {
                         bool airBelow = api.World.BlockAccessor.GetBlockBelow(entity.Pos.AsBlockPos).Code == "air";
-                        if (!airBelow) eagent.Controls.IsFlying = false;
+                        if (!airBelow) AirToGround();
                     }
                 }
-
 
                 #endregion Flight Control
 
@@ -412,7 +455,7 @@ namespace Jaunt.Behaviors
                 long nowMs = entity.World.ElapsedMilliseconds;
 
                 // This ensures we start moving without sprint key
-                if (forwardPressed && ebg.IsIdle) SpeedUp();                
+                if (forwardPressed && ebg.IsIdle) SpeedUp();
 
                 // Handle backward to idle change without sprint key
                 if (forwardPressed && ebg.IsBackward) ebg.SetIdle();
@@ -438,18 +481,19 @@ namespace Jaunt.Behaviors
                 prevBackwardKey = scheme == EnumControlScheme.Press && nowBackwards;
 
                 #region Motion update
-                if (canturn && (controls.Left || controls.Right))
+                if (canTurn && (controls.Left || controls.Right))
                 {
                     float dir = controls.Left ? 1 : -1;
                     angularMotion += str * dir * dt;
                 }
                 if (ebg.IsForward || ebg.IsBackward)
-                {
+                {   
                     float dir = ebg.IsForward ? 1 : -1;
                     linearMotion += str * dir * dt * 2f;
                 }
                 #endregion
             }
+
 
             return new Vec2d(linearMotion, angularMotion);
         }
@@ -461,17 +505,20 @@ namespace Jaunt.Behaviors
 
             float step = GlobalConstants.PhysicsFrameTime;
             var motion = SeatsToMotion(step);
-
+            
+            if (wasFlying) if (!eagent.Controls.IsFlying) AirToGround();
+            wasFlying = eagent.Controls.IsFlying;
+            
             if (jumpNow) UpdateRidingState();
 
             ForwardSpeed = Math.Sign(motion.X);
 
-            float yawMultiplier = ebg?.GetTurnRadius() ?? 3.5f;
+            float yawMultiplier = ebg?.CurrentGait.YawMultiplier ?? 3.5f;
 
             AngularVelocity = motion.Y * yawMultiplier;
 
             entity.SidedPos.Yaw += (float)motion.Y * dt * 30f;
-            entity.SidedPos.Yaw = entity.SidedPos.Yaw % GameMath.TWOPI;
+            entity.SidedPos.Yaw %= GameMath.TWOPI;
 
             if (entity.World.ElapsedMilliseconds - lastJumpMs < 2000 && entity.World.ElapsedMilliseconds - lastJumpMs > 200 && entity.OnGround)
             {
@@ -485,7 +532,7 @@ namespace Jaunt.Behaviors
 
             bool wasMidJump = IsInMidJump;
             IsInMidJump &= (entity.World.ElapsedMilliseconds - lastJumpMs < 500 || !entity.OnGround) && !entity.Swimming;
-
+            
             // This is called when jump ends
             if (wasMidJump && !IsInMidJump)
             {
@@ -493,7 +540,7 @@ namespace Jaunt.Behaviors
                 foreach (var seat in Seats) seat.Passenger?.AnimManager?.StopAnimation(meta.RiderAnim.Animation);
                 eagent.AnimManager.StopAnimation(meta.Animation);
             }
-
+            
             // Handle transition from swimming to walking
             if (eagent.Swimming)
             {
@@ -513,9 +560,12 @@ namespace Jaunt.Behaviors
             string nowTurnAnim = null;
             if (ForwardSpeed >= 0)
             {
-                if (AngularVelocity > 0.001) nowTurnAnim = "turn-left";
-                else if (AngularVelocity < -0.001) nowTurnAnim = "turn-right";
+                if (AngularVelocity > 0.001)
+                    nowTurnAnim = "turn-left";
+                else if (AngularVelocity < -0.001)
+                    nowTurnAnim = "turn-right";
             }
+            
             if (nowTurnAnim != curTurnAnim)
             {
                 if (curTurnAnim != null) eagent.StopAnimation(curTurnAnim);
@@ -526,34 +576,30 @@ namespace Jaunt.Behaviors
 
             JauntControlMeta nowControlMeta;
 
-            shouldMove = ForwardSpeed != 0;
+            shouldMove = ForwardSpeed != 0 ;
             if (!shouldMove && !jumpNow)
             {
                 if (curControlMeta != null) Stop();
-                bool isSwimming = eagent.Swimming;
-                bool isFlying = eagent.Controls.IsFlying;
-                
-                if (isSwimming)
+                // Idle states for each environment
+                if (eagent.Swimming)
                 {
-                    curAnim = Controls["swim"].RiderAnim;
-                    nowControlMeta = Controls["swim"];
+                    curAnim = Controls[ebg.IdleSwimmingGait.Code].RiderAnim;
+                    nowControlMeta = Controls[ebg.IdleSwimmingGait.Code];
                 }
-                else if (isFlying)
+                else if (eagent.Controls.IsFlying)
                 {
-                    curAnim = Controls["hover"].RiderAnim;
-                    nowControlMeta = Controls["hover"];
+                    curAnim = Controls[ebg.IdleFlyingGait.Code].RiderAnim;
+                    nowControlMeta = Controls[ebg.IdleFlyingGait.Code];
                 }
                 else
                 {
-                    curAnim = Controls["idle"].RiderAnim;
-                    nowControlMeta = null;//Controls["idle"];
+                    curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
+                    nowControlMeta = null;
                 }
             }
             else
             {
                 nowControlMeta = Controls.FirstOrDefault(c => c.Key == ebg.CurrentGait.Code).Value;
-
-                //nowControlMeta ??= Controls["idle"];
 
                 eagent.Controls.Jump = jumpNow;
 
@@ -676,10 +722,7 @@ namespace Jaunt.Behaviors
                 swimlineSubmergedness = Math.Min(1, swimlineSubmergedness + 0.075f);
                 controls.FlyVector.Y = GameMath.Clamp(controls.FlyVector.Y, 0.002f, 0.004f) * swimlineSubmergedness * 3;
 
-                if (entity.CollidedHorizontally)
-                {
-                    controls.FlyVector.Y = 0.05f;
-                }
+                if (entity.CollidedHorizontally) controls.FlyVector.Y = 0.05f;
 
                 eagent.Pos.Motion.Y += (swimlineSubmergedness - 0.1) / 300.0;
             }
@@ -699,8 +742,16 @@ namespace Jaunt.Behaviors
             {
                 eagent.StopAnimation(curControlMeta.Animation);
             }
-            curControlMeta = null;
-            eagent.StartAnimation("idle");
+            if (eagent.Controls.IsFlying)
+            {
+                eagent.StartAnimation(Controls[ebg.IdleFlyingGait.Code].Animation);
+                curControlMeta = Controls[ebg.IdleFlyingGait.Code];
+            }
+            else
+            {
+                eagent.StartAnimation(Controls[ebg.IdleGait.Code].Animation);
+                curControlMeta = null;
+            }
         }
         
         #endregion Motion Systems
@@ -722,7 +773,7 @@ namespace Jaunt.Behaviors
 
             if (eagent.Swimming)
             {
-                eagent.StartAnimation("swim");
+                eagent.StartAnimation(Controls[ebg.IdleSwimmingGait.Code].Animation);
             }
         }
 
@@ -731,7 +782,7 @@ namespace Jaunt.Behaviors
             UpdateControlScheme();
             ebg?.SetIdle();
         }
-
+        
         public GaitMeta GetFirstForwardGait()
         {
             if (RideableGaitOrder == null || RideableGaitOrder.Count == 0)
@@ -739,6 +790,15 @@ namespace Jaunt.Behaviors
 
             // Find the first forward gait (Order > 1)
             return RideableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleGait;
+        }
+        
+        public GaitMeta GetFirstForwardFlyingGait()
+        {
+            if (FlyableGaitOrder == null || FlyableGaitOrder.Count == 0)
+                return ebg.IdleFlyingGait;
+
+            // Find the first forward gait (Order > 1)
+            return FlyableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleFlyingGait;
         }
 
         public void StaminaGaitCheck(float dt)
@@ -748,20 +808,18 @@ namespace Jaunt.Behaviors
             timeSinceLastGaitCheck += dt;
 
             // Check once a second
-            if (timeSinceLastGaitCheck >= 1f)
+            if (timeSinceLastGaitCheck <= 1f) return;
+            if (ebg.CurrentGait.StaminaCost > 0 && !eagent.Swimming)
             {
-                if (ebg.CurrentGait.StaminaCost > 0 && !eagent.Swimming)
-                {
-                    bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
+                bool isTired = api.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(ebs.Stamina, ebs.MaxStamina);
 
-                    if (isTired)
-                    {                        
-                        ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackGait;
-                    }
+                if (isTired)
+                {                        
+                    ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackGait;
                 }
-
-                timeSinceLastGaitCheck = 0;
             }
+
+            timeSinceLastGaitCheck = 0;
         }
 
         public static float GetStaminaDeficitMultiplier(float currentStamina, float maxStamina)
@@ -779,25 +837,20 @@ namespace Jaunt.Behaviors
 
         #region Listeners
         
+        // This method is meant to mitigate fall damage if fall damage multiplier is not zero and the user has explicitly enabled the damage handler
+        public float HandleDamaged(EntityAgent eagent, float damage, DamageSource damageSource)
+        {
+            if (ebh == null || entity.Properties.FallDamageMultiplier == 0) return damage;
+
+            if (FlyableGaitOrder.Contains(ebg.CurrentGait) && ebg.EnableDamageHandler) return 0f;
+            
+            return damage;
+        }
+        
         public override void OnGameTick(float dt)
         {
-            timeSinceLastLog += dt;
-
-            if (timeSinceLastLog > 1)
-            {
-                foreach (var anim in entity.AnimManager.ActiveAnimationsByAnimCode)
-                {
-                    ModSystem.Logger.Notification($"Active animations: {anim.Key}");
-                }
-
-                timeSinceLastLog = 0;
-            }
-
-            if (api.Side == EnumAppSide.Server)
-            {
-                UpdateAngleAndMotion(dt);
-            }
-
+            if (api.Side == EnumAppSide.Server) UpdateAngleAndMotion(dt);
+            
             StaminaGaitCheck(dt);
 
             UpdateRidingState();
@@ -809,16 +862,16 @@ namespace Jaunt.Behaviors
 
             if (shouldMove)
             {
-                // Adjust move speed based based on gait and control meta
+                // Adjust move speed based on gait and control meta
                 var curMoveSpeed = curControlMeta.MoveSpeed > 0 
                     ? curControlMeta.MoveSpeed 
                     : ebg.CurrentGait.MoveSpeed * curControlMeta.MoveSpeedMultiplier;
 
-                Move(dt, eagent.Controls, curMoveSpeed);
+                Move(dt, eagent?.Controls, curMoveSpeed);
             }
             else
             {
-                if (entity.Swimming) eagent.Controls.FlyVector.Y = 0.2;
+                if (entity.Swimming && eagent is not null) eagent.Controls.FlyVector.Y = 0.2;
             }
 
             UpdateSoundState(dt);

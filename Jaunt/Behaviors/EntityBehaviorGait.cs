@@ -1,25 +1,24 @@
-﻿using Cairo;
-using Jaunt.Hud;
-using Jaunt.Systems;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Jaunt.Systems;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
-using Vintagestory.API.MathTools;
-using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
-        public float TurnRadius { get; set; } = 3.5f;
+        public float TurnRadius { get; set; } = 1f / 3.5f;
+        private float? _yawMultiplier = null;
+        public float YawMultiplier
+        {
+            get => _yawMultiplier ?? 1f / TurnRadius;
+            set => _yawMultiplier = value;
+        }
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
         public float StaminaCost { get; set; } = 0f;
@@ -42,8 +41,10 @@ namespace Jaunt.Behaviors
             set => entity.WatchedAttributes.SetString("currentgait", value.Code);
         }
 
+        public bool EnableDamageHandler = false;
         public GaitMeta IdleGait;
         public GaitMeta IdleFlyingGait;
+        public GaitMeta IdleSwimmingGait;
         public GaitMeta FallbackGait => CurrentGait.FallbackGaitCode is null ? IdleGait : Gaits[CurrentGait.FallbackGaitCode];
         public GaitMeta CascadingFallbackGait(int n)
         {
@@ -79,8 +80,8 @@ namespace Jaunt.Behaviors
             api = entity.Api;
             capi = api as ICoreClientAPI;
 
-            GaitMeta[] gaitarray = attributes["gaits"].AsArray<GaitMeta>();
-            foreach (GaitMeta gait in gaitarray)
+            var gaitarray = attributes["gaits"].AsArray<GaitMeta>();
+            foreach (var gait in gaitarray)
             {
                 Gaits[gait.Code] = gait;
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
@@ -88,11 +89,14 @@ namespace Jaunt.Behaviors
                 
                 if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
-            
+
             string idleGaitCode = attributes["idleGait"].AsString("idle");
-            string idleAirGaitCode = attributes["idleFlyingGait"].AsString("hover");
+            string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
+            string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
+            EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
             IdleGait = Gaits[idleGaitCode];
-            IdleFlyingGait = Gaits[idleAirGaitCode];
+            IdleFlyingGait = Gaits[idleFlyingGaitCode];
+            IdleSwimmingGait = Gaits[idleSwimmingGaitCode];
 
             CurrentGait = eagent.Controls.IsFlying ? IdleFlyingGait : IdleGait; // Set initial gait to Idle
         }
@@ -104,11 +108,11 @@ namespace Jaunt.Behaviors
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
         }
 
-        public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
+        public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 1 / 3.5f; // Default turn radius if not set
 
         public void SetIdle() => CurrentGait = eagent.Controls.IsFlying ? IdleFlyingGait : IdleGait;
         public bool IsIdle => eagent.Controls.IsFlying ? CurrentGait == IdleFlyingGait : CurrentGait == IdleGait;
-        public bool IsBackward => CurrentGait.Backwards;
+        public bool IsBackward => CurrentGait.Backwards || CurrentGait.MoveSpeed < 0f;
         public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
         public void ApplyGaitFatigue(float dt)
@@ -121,10 +125,10 @@ namespace Jaunt.Behaviors
             {
                 if (CurrentGait.StaminaCost > 0 && !entity.Swimming)
                 {
-                    ebs.FatigueEntity(CurrentGait.StaminaCost, new()
+                    ebs.FatigueEntity(CurrentGait.StaminaCost, new FatigueSource
                     {
                         Source = EnumFatigueSource.Mounted,
-                        SourceEntity = (entity as EntityAgent).MountedOn?.Passenger ?? entity
+                        SourceEntity = (entity as EntityAgent)?.MountedOn?.Passenger ?? entity
                     });
                 }
             }
