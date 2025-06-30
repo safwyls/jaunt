@@ -9,6 +9,7 @@ using Vintagestory.API.Common.Entities;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
 using Vintagestory.Client.NoObf;
+using Vintagestory.GameContent;
 
 namespace Jaunt
 {
@@ -38,7 +39,7 @@ namespace Jaunt
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
 
-            ReloadConfig(api);
+            ReloadConfig();
         }
 
         public override void StartServerSide(ICoreServerAPI api)
@@ -49,7 +50,6 @@ namespace Jaunt
         public override void StartClientSide(ICoreClientAPI api)
         {
             capi = api;
-            RegisterHotkeys();
 
             if (Config.EnableStamina)
             {
@@ -90,26 +90,6 @@ namespace Jaunt
             return null;
         }
 
-        private void RegisterHotkeys()
-        {
-            capi.Input.RegisterHotKey("ascendInFlight", "Ascended While Flying", GlKeys.R, HotkeyType.GUIOrOtherControls);
-            capi.Input.RegisterHotKey("descendInFlight", "Descend While Flying", GlKeys.F, HotkeyType.GUIOrOtherControls);
-            capi.Input.SetHotKeyHandler("ascendInFlight", OnAscendInFlight);
-            capi.Input.SetHotKeyHandler("decreaseStepHeight", OnDescendInFlight);
-        }
-
-        private bool OnAscendInFlight(KeyCombination comb)
-        {
-            // Track button state
-            return true;
-        }
-
-        private bool OnDescendInFlight(KeyCombination comb)
-        {
-            // Track button state
-            return true;
-        }
-
         private void AddFatigueHandlers(Entity entity)
         {
             var ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
@@ -129,7 +109,7 @@ namespace Jaunt
             return fatigue;
         }
 
-        public void ReloadConfig(ICoreAPI api)
+        public void ReloadConfig()
         {
             try
             {
