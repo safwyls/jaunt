@@ -3,8 +3,17 @@
   "debug-rideable-init": "[Jaunt] Initializing rideable behavior for entity {0}",
 
   "ingame-error-too-wild": "This animal is too wild to ride",
+  "ingame-error-no-entitysel": "No entity selected",
+  "discovery-bound-entity": "Flute bound to mountable group: {0}",
 
   "infotext-stamina-state": "Stamina: {0:0.##}/{1:0.##}",
   "infotext-stamina-sprint-fatigue": "Stamina Sprint Fatigue: {0}",
-  "infotext-stamina-swim-fatigue": "Stamina Swim Fatigue: {0}"
+  "infotext-stamina-swim-fatigue": "Stamina Swim Fatigue: {0}",
+  
+  "instrument-skill-bind": "Bind Instrument",  
+  "instrument-skill-play": "Play Instrument",
+  
+  "groupcode-ferus": "Wild Horses",
+  "groupcode-wyvern": "Wyverns",
+  "groupcode-mountableanimal": "Elk"
 }
