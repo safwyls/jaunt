@@ -105,8 +105,6 @@ namespace Jaunt.Behaviors
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
-            curAnim = Controls["idle"].RiderAnim;
-
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
         }
 
@@ -138,6 +136,8 @@ namespace Jaunt.Behaviors
                     if (gait != null) FlyableGaitOrder.Add(gait);
                 }   
             }
+            
+            curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
 
             if (ebh is not null)
             {
@@ -302,7 +302,7 @@ namespace Jaunt.Behaviors
             if (api.Side != EnumAppSide.Server) return;
 
             nextGait ??= GetNextGait(forward, transition);
-
+            ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
             ebg.CurrentGait = nextGait;
         }
 
@@ -446,7 +446,7 @@ namespace Jaunt.Behaviors
                 // Detect if button currently being pressed
                 bool nowForwards = controls.Forward;
                 bool nowBackwards = controls.Backward;
-                bool nowSprint = controls.Sprint;
+                bool nowSprint = controls.CtrlKey;
 
                 // Detect if current press is a fresh press
                 bool forwardPressed = nowForwards && !prevForwardKey;
@@ -498,8 +498,28 @@ namespace Jaunt.Behaviors
 
             return new Vec2d(linearMotion, angularMotion);
         }
+        
+        bool wasPaused;
+        public new void OnRenderFrame(float dt, EnumRenderStage stage)
+        {
+            if (!wasPaused && capi.IsGamePaused)
+            {
+                gaitSound?.Pause();
+            }
+            if (wasPaused && !capi.IsGamePaused)
+            {
+                if (gaitSound?.IsPaused == true) gaitSound?.Start();
+            }
 
-        protected virtual void UpdateAngleAndMotion(float dt)
+            wasPaused = capi.IsGamePaused;
+
+            if (capi.IsGamePaused) return;
+
+
+            UpdateAngleAndMotion(dt);
+        }
+
+        protected void UpdateAngleAndMotion(float dt)
         {
             // Ignore lag spikes
             dt = Math.Min(0.5f, dt);
@@ -517,8 +537,10 @@ namespace Jaunt.Behaviors
             float yawMultiplier = ebg?.CurrentGait.YawMultiplier ?? 3.5f;
 
             AngularVelocity = motion.Y * yawMultiplier;
-
+            
+            
             entity.SidedPos.Yaw += (float)motion.Y * dt * 30f;
+            //ModSystem.Logger.Notification($"Yaw: {entity.SidedPos.Yaw}, Multiplier: {yawMultiplier}, Gait: {ebg.CurrentGait.Code}");
             entity.SidedPos.Yaw %= GameMath.TWOPI;
 
             if (entity.World.ElapsedMilliseconds - lastJumpMs < 2000 && entity.World.ElapsedMilliseconds - lastJumpMs > 200 && entity.OnGround)
@@ -570,7 +592,7 @@ namespace Jaunt.Behaviors
             if (nowTurnAnim != curTurnAnim)
             {
                 if (curTurnAnim != null) eagent.StopAnimation(curTurnAnim);
-                var anim = (ForwardSpeed == 0 ? "idle-" : "") + nowTurnAnim;
+                var anim = (ForwardSpeed == 0 ? "idle-" : eagent.Controls.IsFlying ? "fly-" : "") + nowTurnAnim;
                 curTurnAnim = anim;
                 eagent.StartAnimation(anim);
             }
@@ -781,7 +803,7 @@ namespace Jaunt.Behaviors
         public new void DidMount(EntityAgent entityAgent)
         {
             UpdateControlScheme();
-            ebg?.SetIdle();
+            //ebg?.SetIdle();
         }
         
         public GaitMeta GetFirstForwardGait()
@@ -801,7 +823,7 @@ namespace Jaunt.Behaviors
             // Find the first forward gait (Order > 1)
             return FlyableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleFlyingGait;
         }
-
+        
         public void StaminaGaitCheck(float dt)
         {
             if (api.Side != EnumAppSide.Server || ebs == null || ebg == null) return;
