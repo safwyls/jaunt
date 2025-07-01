@@ -1,0 +1,8 @@
+[
+  {
+    "file": "game:itemtypes/utility/instrument",
+    "op": "replace",
+    "path": "/class",
+    "value": "jaunt:itemflute"
+  }
+]
