@@ -11,36 +11,37 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Items
 {
-    public class ItemFlute : Item
+    public class ItemJauntFlute : Item
     {
         protected static JauntModSystem ModSystem => JauntModSystem.Instance;
         SkillItem[] modes;
+        private ICoreClientAPI capi;
         
         public override void OnLoaded(ICoreAPI api)
         {
             ModSystem.Logger.Notification("Initializing Jaunt ItemFlute...");
             base.OnLoaded(api);
-            var capi = api as ICoreClientAPI;
+            capi = api as ICoreClientAPI;
 
             modes = new[]
             {
                 new SkillItem()
                 {
                     Code = new AssetLocation("play"),
-                    Name = Lang.Get("instrument-skill-play")
+                    Name = Lang.Get("jaunt:instrument-skill-play")
                 },
                 new SkillItem()
                 {
                     Code = new AssetLocation("bind"),
-                    Name = Lang.Get("instrument-skill-bind")
+                    Name = Lang.Get("jaunt:instrument-skill-bind")
                 }
             };
 
             if (capi != null)
             {
-                modes[0].WithIcon(capi, capi.Gui.LoadSvgWithPadding(new AssetLocation("textures/icons/instrument-play.svg"), 48, 48, 5, ColorUtil.WhiteArgb));
+                modes[0].WithIcon(capi, capi.Gui.LoadSvgWithPadding(new AssetLocation("jaunt:textures/icons/instrument-play.svg"), 48, 48, 5, ColorUtil.WhiteArgb));
                 modes[0].TexturePremultipliedAlpha = false;
-                modes[1].WithIcon(capi, capi.Gui.LoadSvgWithPadding(new AssetLocation("textures/icons/instrument-bind.svg"), 48, 48, 5, ColorUtil.WhiteArgb));
+                modes[1].WithIcon(capi, capi.Gui.LoadSvgWithPadding(new AssetLocation("jaunt:textures/icons/instrument-bind.svg"), 48, 48, 5, ColorUtil.WhiteArgb));
                 modes[1].TexturePremultipliedAlpha = false;
             }
         }
@@ -72,6 +73,11 @@ namespace Jaunt.Items
             }
             else
             {
+                if (entitySel is null || entitySel.Entity is null)
+                {
+                    capi.TriggerIngameError(this, "no-entity-selected", Lang.Get("jaunt:error-no-entitysel"));
+                    return;
+                }
                 SetBoundEntityType(slot, entitySel.Entity);
             }
 
@@ -100,6 +106,7 @@ namespace Jaunt.Items
             if (string.IsNullOrEmpty(groupCode)) return;
             
             slot.Itemstack.Attributes.SetString("groupCode", groupCode);
+            capi?.TriggerIngameDiscovery(this, "bound-groupcode", Lang.Get("jaunt:discovery-bound-entity", Lang.Get($"jaunt:groupcode-{groupCode}")));
         }
 
         private void callElk(ItemSlot slot, EntityAgent byEntity)
