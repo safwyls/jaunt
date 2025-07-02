@@ -3,6 +3,7 @@ using Jaunt.Config;
 using Jaunt.Hud;
 using Jaunt.Systems;
 using System;
+using Jaunt.Entities;
 using Jaunt.Items;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -37,6 +38,7 @@ namespace Jaunt
             this.api = api;
 
             api.RegisterItemClass(ModId + ":itemflute", typeof(ItemJauntFlute));
+            api.RegisterEntity(ModId + ":entityflyingagent", typeof(EntityFlyingAgent));
             api.RegisterEntityBehaviorClass(ModId + ":gait", typeof(EntityBehaviorGait));
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
