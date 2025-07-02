@@ -1,6 +1,6 @@
 {
 	"code": "wyvern",
-	"class": "EntityAgent",
+	"class": "jaunt:entityflyingagent",
 	"fallDamageMultiplierByType": { "*-baby-*" : 0, "*-autumnus" : 0},
 	"variantgroups": [
 		{ "code": "age", "states": [ "adult", "baby", "juvenile", "adolescent"]},
@@ -61,11 +61,11 @@
 				{ "code": "walk", "turnRadius": 0.2857, "staminaCost": 0.0, "sound": "game:creature/hooved/trot", "iconTexture": "hud/walk.svg", "movespeedByType": { "*-autumnus": 0.017 } },
 				{ "code": "sprint", "turnRadius": 0.67, "staminaCost": 0.2, "fallbackGaitCode": "walk", "sound": "game:creature/hooved/gallop", "movespeedByType": { "*-autumnus": 0.16 } },
 
-				{ "code": "flyback", "turnRadius": 0.2857, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": -0.025 } },
-				{ "code": "hover", "turnRadius": 0.2857, "staminaCost": 0.0 },
-				{ "code": "glide", "turnRadius": 0.4, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.08 } },
-				{ "code": "glideflap", "turnRadius": 0.67, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.10 } },
-				{ "code": "fly", "turnRadius": 2, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.12 } },
+				{ "code": "flyback", "turnRadius": 1, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": -0.025 } },
+				{ "code": "hover", "turnRadius": 0.5, "staminaCost": 0.0 },
+				{ "code": "glide", "turnRadius": 2, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.08 } },
+				{ "code": "glideflap", "turnRadius": 3, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.10 } },
+				{ "code": "fly", "turnRadius": 4, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.12 } },
 
 				{ "code": "jump", "turnRadius": 0.2857, "staminaCost": 0.0, "sound": "game:creature/hooved/trot", "movespeedByType": { "*-autumnus": 0.16 } },
 
@@ -534,6 +534,8 @@
 			{ "code": "run", "animation": "run", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "turn-left", "animation": "turn-left", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 0.01, "blendMode": "Average", "elementWeight": { "Head Origin": 80, "Chest": 80, "Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80, "Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
 			{ "code": "turn-right", "animation": "turn-right", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 0.01, "blendMode": "Average", "elementWeight": { "Head Origin": 80, "Chest": 80, "Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80, "Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
+			{ "code": "fly-turn-left", "animation": "fly-turn-left", "easeInSpeed": 3, "weight": 10, "easeOutSpeed": 10, "blendMode": "Average", "elementWeight": { "Head Origin": 5, "Chest": 5, "Neck1": 5, "Neck2": 5, "Neck3": 5, "Neck4": 5, "Neck5": 5, "Tail":5, "Tail2":5, "Tail3":5, "Tail4":5, "Tail5":5, "Tail6":5, "Tail7":5, "Tail8":5, "Tail9":5}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
+			{ "code": "fly-turn-right", "animation": "fly-turn-right", "easeInSpeed": 3, "weight": 10, "easeOutSpeed": 10, "blendMode": "Average", "elementWeight": { "Head Origin": 5, "Chest": 5, "Neck1": 5, "Neck2": 5, "Neck3": 5, "Neck4": 5, "Neck5": 5, "Tail":5, "Tail2":5, "Tail3":5, "Tail4":5, "Tail5":5, "Tail6":5, "Tail7":5, "Tail8":5, "Tail9":5}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
 			{ "code": "walk", "animation": "walk", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "glide", "animation": "glide", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "glideflap", "animation": "glideflap", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
