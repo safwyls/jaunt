@@ -124,7 +124,7 @@ namespace Jaunt.Behaviors
 
             foreach (var str in GaitOrderCodes)
             {
-                GaitMeta gait = ebg?.Gaits[str];
+                var gait = ebg?.Gaits[str];
                 if (gait != null) RideableGaitOrder.Add(gait);
             }
 
@@ -132,12 +132,21 @@ namespace Jaunt.Behaviors
             {
                 foreach (var str in FlyableGaitOrderCodes)
                 {
-                    GaitMeta gait = ebg?.Gaits[str];
+                    var gait = ebg?.Gaits[str];
                     if (gait != null) FlyableGaitOrder.Add(gait);
                 }   
             }
             
-            curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
+            if (FlyableGaitOrder.Contains(ebg?.CurrentGait))
+            {
+                eagent.Controls.IsFlying = true;
+            }
+
+            if (eagent.Controls.IsFlying && Controls.TryGetValue(ebg.IdleFlyingGait.Code, out var control) 
+                || Controls.TryGetValue(ebg.IdleGait.Code, out control))
+            {
+                curAnim = control.RiderAnim;
+            }
 
             if (ebh is not null)
             {
