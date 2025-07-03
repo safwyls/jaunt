@@ -97,14 +97,19 @@ namespace Jaunt.Behaviors
             IdleGait = Gaits[idleGaitCode];
             IdleFlyingGait = Gaits[idleFlyingGaitCode];
             IdleSwimmingGait = Gaits[idleSwimmingGaitCode];
-
-            CurrentGait = eagent.Controls.IsFlying ? IdleFlyingGait : IdleGait; // Set initial gait to Idle
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
         {
+            // Set initial gait
+            // This is important to make sure CurrentGait can be called by other behaviors
+            // Todo: Review this for a potentially more robust way of picking the initial gait
+            if (!entity.OnGround && IdleFlyingGait is not null) 
+                CurrentGait = IdleFlyingGait;
+            else 
+                CurrentGait = IdleGait;
+            
             base.AfterInitialized(onFirstSpawn);
-
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
         }
 
