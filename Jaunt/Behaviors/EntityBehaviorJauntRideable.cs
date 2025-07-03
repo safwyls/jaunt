@@ -401,8 +401,8 @@ namespace Jaunt.Behaviors
                 
                 bool jumpPressed = controls.Jump && !prevJumpKey;
 
-                // Only able to jump every 1500ms. Only works while on the ground.
-                if (jumpPressed && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 && entity.Alive && (entity.OnGround || coyoteTimer > 0))
+                // Only able to jump every 1500ms. Only works while on the ground. && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 
+                if (jumpPressed && entity.Alive && (entity.OnGround || coyoteTimer > 0))
                 {
                     lastJumpMs = entity.World.ElapsedMilliseconds;
                     jumpNow = true;
