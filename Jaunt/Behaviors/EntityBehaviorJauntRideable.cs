@@ -34,6 +34,7 @@ namespace Jaunt.Behaviors
         public List<GaitMeta> FlyableGaitOrder = new(); // List of gaits in order of increasing speed for the flyable entity
         public List<GaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
         public bool CanFly => FlyableGaitOrder?.Count > 0;
+        public double VerticalSpeed;
         
         #endregion Public
 
@@ -430,14 +431,8 @@ namespace Jaunt.Behaviors
                     
                     var normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
                     var climbSpeed = 1f + MathF.Sin(tiltAngle) * normalizedMoveSpeed * ebg.CurrentGait.YawMultiplier;
-                    eagent.Controls.MovespeedMultiplier = climbSpeed;
-                    
-                    if (eagent.Controls.MovespeedMultiplier == 0) eagent.Controls.MovespeedMultiplier = 1f;
-                    
-                    // Commenting out this pitch stuff for now as it seems janky
-                    if (pitchUp) entity.Pos.Roll = -tiltAngle;
-                    else if (pitchDown) entity.Pos.Roll = tiltAngle;
-                    else entity.Pos.Roll = 0;
+                    VerticalSpeed = climbSpeed * (pitchUp ? 1 : pitchDown ? -1 : 0);
+                    eagent.Controls.MovespeedMultiplier = climbSpeed == 0 ? 1f : climbSpeed;
                     
                     if (eagent.Controls.Down)
                     {
@@ -494,7 +489,7 @@ namespace Jaunt.Behaviors
                 if (canTurn && (controls.Left || controls.Right))
                 {
                     float dir = controls.Left ? 1 : -1;
-                    angularMotion += str * dir * dt;
+                    angularMotion += ebg.CurrentGait.YawMultiplier * str * dir * dt;
                 }
                 if (ebg.IsForward || ebg.IsBackward)
                 {   
@@ -547,10 +542,19 @@ namespace Jaunt.Behaviors
 
             AngularVelocity = motion.Y * yawMultiplier;
             
-            
             entity.SidedPos.Yaw += (float)motion.Y * dt * 30f;
-            //ModSystem.Logger.Notification($"Yaw: {entity.SidedPos.Yaw}, Multiplier: {yawMultiplier}, Gait: {ebg.CurrentGait.Code}");
             entity.SidedPos.Yaw %= GameMath.TWOPI;
+
+            timeSinceLastLog += dt;
+            if (timeSinceLastLog > 1f)
+            {
+                // if (eagent.Controls.IsFlying)
+                // {
+                //     ModSystem.Logger.Notification($"Yaw: {entity.SidedPos.Yaw}, Multiplier: {yawMultiplier}, Gait: {ebg.CurrentGait.Code}");
+                //     ModSystem.Logger.Notification($"======================================================");
+                //     timeSinceLastLog = 0;   
+                // }
+            }
 
             if (entity.World.ElapsedMilliseconds - lastJumpMs < 2000 && entity.World.ElapsedMilliseconds - lastJumpMs > 200 && entity.OnGround)
             {
@@ -590,12 +594,25 @@ namespace Jaunt.Behaviors
             eagent.Controls.Sprint = ebg.CurrentGait.StaminaCost > 0 && ForwardSpeed > 0;
 
             string nowTurnAnim = null;
+            string nowClimbAnim = null;
             if (ForwardSpeed >= 0)
             {
-                if (AngularVelocity > 0.001)
-                    nowTurnAnim = "turn-left";
-                else if (AngularVelocity < -0.001)
-                    nowTurnAnim = "turn-right";
+                nowTurnAnim = AngularVelocity switch
+                {
+                    > 0.001 => "turn-left",
+                    < -0.001 => "turn-right",
+                    _ => null
+                };
+
+                if (eagent.Controls.IsFlying)
+                {
+                    nowClimbAnim = VerticalSpeed switch
+                    {
+                        > 0.001 => "fly-up",
+                        < -0.001 => "fly-down",
+                        _ => null
+                    };   
+                }
             }
             
             if (nowTurnAnim != curTurnAnim)
@@ -605,10 +622,18 @@ namespace Jaunt.Behaviors
                 curTurnAnim = anim;
                 eagent.StartAnimation(anim);
             }
+            
+            if (nowClimbAnim != curClimbAnim)
+            {
+                if (curClimbAnim != null) eagent.StopAnimation(curClimbAnim);
+                var anim = ForwardSpeed == 0 ? "hover" : nowClimbAnim; 
+                curClimbAnim = anim == "hover" ? null : anim;
+                eagent.StartAnimation(anim);
+            }
 
             JauntControlMeta nowControlMeta;
 
-            shouldMove = ForwardSpeed != 0 ;
+            shouldMove = ForwardSpeed != 0;
             if (!shouldMove && !jumpNow)
             {
                 if (curControlMeta != null) Stop();
@@ -882,6 +907,22 @@ namespace Jaunt.Behaviors
         
         public override void OnGameTick(float dt)
         {
+            timeSinceLastLog += dt;
+
+            if (timeSinceLastLog > 1f)
+            {
+                // if (eagent.Controls.IsFlying)
+                // {
+                //     foreach (var anim in eagent.AnimManager.ActiveAnimationsByAnimCode)
+                //     {
+                //         ModSystem.Logger.Notification($"Active Anim: {anim.Key}");   
+                //     }
+                //     ModSystem.Logger.Notification($"==============================");
+                //
+                //     timeSinceLastLog = 0f;   
+                // }
+            }
+            
             if (api.Side == EnumAppSide.Server) UpdateAngleAndMotion(dt);
             
             StaminaGaitCheck(dt);
