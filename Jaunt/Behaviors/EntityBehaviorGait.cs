@@ -97,10 +97,7 @@ namespace Jaunt.Behaviors
             IdleGait = Gaits[idleGaitCode];
             IdleFlyingGait = Gaits[idleFlyingGaitCode];
             IdleSwimmingGait = Gaits[idleSwimmingGaitCode];
-        }
-
-        public override void AfterInitialized(bool onFirstSpawn)
-        {
+            
             // Set initial gait
             // This is important to make sure CurrentGait can be called by other behaviors
             // Todo: Review this for a potentially more robust way of picking the initial gait
@@ -108,7 +105,10 @@ namespace Jaunt.Behaviors
                 CurrentGait = IdleFlyingGait;
             else 
                 CurrentGait = IdleGait;
-            
+        }
+
+        public override void AfterInitialized(bool onFirstSpawn)
+        {
             base.AfterInitialized(onFirstSpawn);
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
         }
