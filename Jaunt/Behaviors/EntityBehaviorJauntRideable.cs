@@ -235,6 +235,13 @@ namespace Jaunt.Behaviors
         public void SpeedUp() => SetNextGait(true);
         public void SlowDown() => SetNextGait(false);
 
+        /// <summary>
+        /// Finds the appropriate gait for the entity based on the current gait and transition type.
+        /// Looks at closest gait in the order of increasing speed for the rideable entity
+        /// </summary>
+        /// <param name="gait"></param>
+        /// <param name="transition"></param>
+        /// <returns></returns>
         public GaitMeta TranslateGait(GaitMeta gait, TransitionEnum transition)
         {
             switch (transition)
@@ -846,7 +853,7 @@ namespace Jaunt.Behaviors
             if (RideableGaitOrder == null || RideableGaitOrder.Count == 0)
                 return ebg.IdleGait;
 
-            // Find the first forward gait (Order > 1)
+            // Find the first forward gait (not backwards and with positive move speed)
             return RideableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleGait;
         }
         
@@ -855,7 +862,7 @@ namespace Jaunt.Behaviors
             if (FlyableGaitOrder == null || FlyableGaitOrder.Count == 0)
                 return ebg.IdleFlyingGait;
 
-            // Find the first forward gait (Order > 1)
+            // Find the first forward gait (not backwards and with positive move speed)
             return FlyableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleFlyingGait;
         }
         
