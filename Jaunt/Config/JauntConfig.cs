@@ -34,6 +34,6 @@
         public float DefaultExhaustionThreshold { get; set; } = 0.1f;
         public bool DefaultDontFleeWhenExhausted { get; set; } = false;
 
-        public bool GlobalDebugMode { get; set; } = true;
+        public bool GlobalDebugMode { get; set; } = false;
     }
 }
