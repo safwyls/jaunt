@@ -517,6 +517,7 @@ namespace Jaunt.Behaviors
                 if (nowChange)
                 {
                     gaitSound?.Stop();
+                    gaitSound?.Dispose();
                     prevSoundCode = curSoundCode;
 
                     if (curSoundCode is null) return;
