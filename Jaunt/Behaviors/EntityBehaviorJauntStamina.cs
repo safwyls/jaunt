@@ -211,13 +211,13 @@ namespace Jaunt.Behaviors
                     // Entity swimming
                     if (entity.Swimming)
                     {
-                        ActivelyFatiguing = ApplyFatigue(SwimFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Swim);
+                        ActivelyFatiguing = ApplyFatigue(SwimFatigue * ModSystem.Config.GlobalSwimStaminaCostMultiplier * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Swim);
                     }
 
                     // Fleeing fatigue
                     if (Fleeing)
                     {
-                        ActivelyFatiguing = ApplyFatigue(SprintFatigue * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Run);
+                        ActivelyFatiguing = ApplyFatigue(SprintFatigue * ModSystem.Config.GlobalSprintStaminaCostMultiplier * CalculateElapsedMultiplier(timeSinceLastUpdate), EnumFatigueSource.Run);
                     }
 
                     // --- Stamina regeneration ---
