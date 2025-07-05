@@ -33,6 +33,9 @@
         public float DefaultRegenPenaltyMounted { get; set; } = 0.3f;
         public float DefaultExhaustionThreshold { get; set; } = 0.1f;
         public bool DefaultDontFleeWhenExhausted { get; set; } = false;
+        
+        // Audio Settings
+        public int MaxLoadedSounds { get; set; } = 3;
 
         public bool GlobalDebugMode { get; set; } = true;
     }

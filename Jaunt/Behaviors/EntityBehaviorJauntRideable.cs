@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Jaunt.Util;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
@@ -504,7 +505,7 @@ namespace Jaunt.Behaviors
             if (eagent.OnGround) notOnGroundAccum = 0;
             else notOnGroundAccum += dt;
 
-            gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
+            gaitSound?.SetPosition(entity.Pos.XYZ.ToVec3f());
 
             if (Controls.ContainsKey(ebg.CurrentGait.Code))
             {
@@ -521,15 +522,22 @@ namespace Jaunt.Behaviors
 
                     if (curSoundCode is null) return;
 
-                    gaitSound = capi.World.LoadSound(new SoundParams()
+                    gaitSound = ModSystem.SoundCache.Get(curSoundCode);
+                    
+                    if (gaitSound == null) 
                     {
-                        Location = gaitMeta.Sound,
-                        DisposeOnFinish = false,
-                        Position = entity.Pos.XYZ.ToVec3f(),
-                        ShouldLoop = true
-                    });
-
+                        gaitSound = capi.World.LoadSound(new SoundParams()
+                        {
+                            Location = gaitMeta.Sound,
+                            DisposeOnFinish = false,
+                            Position = entity.Pos.XYZ.ToVec3f(),
+                            ShouldLoop = true
+                        });
+                     
+                        ModSystem.SoundCache.Add(curSoundCode, gaitSound);   
+                    }
                     gaitSound?.Start();
+                    
                     if (DebugMode) ModSystem.Logger.Notification($"Now playing sound: {gaitMeta.Sound}");
                 }
             }

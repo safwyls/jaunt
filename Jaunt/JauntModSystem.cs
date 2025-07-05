@@ -3,6 +3,7 @@ using Jaunt.Config;
 using Jaunt.Hud;
 using Jaunt.Systems;
 using System;
+using Jaunt.Util;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
@@ -24,6 +25,7 @@ namespace Jaunt
         public ICoreClientAPI ClientApi { get; private set; }
         public JauntConfig Config { get; private set; }
         public static JauntModSystem Instance { get; private set; }
+        public LRUSoundCache<ILoadedSound> SoundCache { get; private set; }
 
         // Debug mode for logging
         internal bool DebugMode => Config.GlobalDebugMode;
@@ -38,6 +40,7 @@ namespace Jaunt
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
 
             ReloadConfig(api);
+            SoundCache = new LRUSoundCache<ILoadedSound>(Config.MaxLoadedSounds);
         }
 
         public override void StartServerSide(ICoreServerAPI api)
