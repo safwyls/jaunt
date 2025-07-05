@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Vintagestory.API.Client;
 
 namespace Jaunt.Util;
 
@@ -48,9 +49,13 @@ public class LRUSoundCache<T> where T : IDisposable
             {
                 var lruNode = lruList.Last;
                 if (lruNode == null) return; // Should not happen, but just in case
-                lruList.RemoveLast();
-                cacheMap.Remove(lruNode.Value.Key);
-                lruNode.Value.Value.Dispose();  // Dispose the evicted sound
+                if (((ILoadedSound)lruNode.Value.Value).HasStopped)
+                {
+                    // If the sound is stopped, we can safely dispose it
+                    lruList.RemoveLast();
+                    cacheMap.Remove(lruNode.Value.Key);
+                    lruNode.Value.Value.Dispose();  // Dispose the evicted sound
+                }
             }
 
             var newNode = new LinkedListNode<CacheEntry>(new CacheEntry { Key = key, Value = value });
