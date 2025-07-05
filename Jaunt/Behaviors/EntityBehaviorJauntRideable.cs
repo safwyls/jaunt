@@ -135,7 +135,7 @@ namespace Jaunt.Behaviors
                 {
                     var gait = ebg?.Gaits[str];
                     if (gait != null) FlyableGaitOrder.Add(gait);
-                }   
+                }
             }
             
             if (FlyableGaitOrder.Contains(ebg?.CurrentGait))
@@ -409,15 +409,18 @@ namespace Jaunt.Behaviors
                 
                 bool jumpPressed = controls.Jump && !prevJumpKey;
 
-                // Only able to jump every 1500ms. Only works while on the ground. && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 
-                if (jumpPressed && entity.Alive && (entity.OnGround || coyoteTimer > 0))
+                switch (jumpPressed)
                 {
-                    lastJumpMs = entity.World.ElapsedMilliseconds;
-                    jumpNow = true;
-                }
-                else if (jumpPressed && !entity.OnGround)
-                {
-                    GroundToAir();
+                    case true when entity.Properties.Habitat == EnumHabitat.Air:
+                        GroundToAir();
+                        break;
+                    case true when entity.Alive && (entity.OnGround || coyoteTimer > 0):
+                        lastJumpMs = entity.World.ElapsedMilliseconds;
+                        jumpNow = true;
+                        break;
+                    case true when !entity.OnGround:
+                        GroundToAir();
+                        break;
                 }
                 
                 prevJumpKey = controls.Jump;
@@ -434,7 +437,7 @@ namespace Jaunt.Behaviors
                     bool pitchUp = controls.Jump && !controls.Sneak;
                     
                     // This gives a linear tilt angled from 6 to 30 degrees at yaw multiplier of 4 down to 0
-                    float tiltAngle = GameMath.DEG2RAD * (ebg.CurrentGait.YawMultiplier / 5 * 30f); // Tilt angle for the flight control
+                    float tiltAngle = GameMath.DEG2RAD * (ebg.CurrentGait.YawMultiplier  * 30f); // Tilt angle for the flight control
                     
                     var normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
                     var climbSpeed = 1f + MathF.Sin(tiltAngle) * normalizedMoveSpeed * ebg.CurrentGait.YawMultiplier;
@@ -457,7 +460,11 @@ namespace Jaunt.Behaviors
                 // Detect if button currently being pressed
                 bool nowForwards = controls.Forward;
                 bool nowBackwards = controls.Backward;
-                bool nowSprint = controls.CtrlKey;
+                bool nowSprint = controls.Sprint;
+                
+                // Toggling this off so that the next press of the sprint key will be a fresh press
+                // Need this to allow cycling up with sprint rather than just treating it as a boolean toggle
+                controls.Sprint = false;
 
                 // Detect if current press is a fresh press
                 bool forwardPressed = nowForwards && !prevForwardKey;
@@ -505,7 +512,6 @@ namespace Jaunt.Behaviors
                 }
                 #endregion
             }
-
 
             return new Vec2d(linearMotion, angularMotion);
         }
