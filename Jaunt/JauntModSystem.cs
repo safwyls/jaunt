@@ -42,6 +42,7 @@ namespace Jaunt
             api.RegisterEntityBehaviorClass(ModId + ":gait", typeof(EntityBehaviorGait));
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
+            api.RegisterEntityBehaviorClass(ModId + ":physics", typeof(EntityBehaviorJauntPhysics));
 
             ReloadConfig();
         }

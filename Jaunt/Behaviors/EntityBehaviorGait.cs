@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net.Security;
 using Jaunt.Systems;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -101,10 +103,8 @@ namespace Jaunt.Behaviors
             // Set initial gait
             // This is important to make sure CurrentGait can be called by other behaviors
             // Todo: Review this for a potentially more robust way of picking the initial gait
-            if (!entity.OnGround && IdleFlyingGait is not null) 
-                CurrentGait = IdleFlyingGait;
-            else 
-                CurrentGait = IdleGait;
+            // currently leaving as idle gait, but could be set to a more appropriate gait based on entity state
+            CurrentGait = IdleGait;
         }
 
         public override void AfterInitialized(bool onFirstSpawn)

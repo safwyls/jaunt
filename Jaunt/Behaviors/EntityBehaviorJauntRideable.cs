@@ -194,7 +194,10 @@ namespace Jaunt.Behaviors
         // Stop mounts from wandering off if mounted in last 24 hours (in game time)
         private bool TaskManager_OnShouldExecuteTask(IAiTask task)
         {
-            if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24) return false;
+            if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24)
+            {
+                return false;
+            }
 
             return Seats.All(seat => seat.Passenger == null);
         }
@@ -319,7 +322,7 @@ namespace Jaunt.Behaviors
             if (api.Side != EnumAppSide.Server) return;
 
             nextGait ??= GetNextGait(forward, transition);
-            ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
+            if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
             ebg.CurrentGait = nextGait;
         }
 
@@ -385,7 +388,7 @@ namespace Jaunt.Behaviors
                         break;
                     }
                 }
-
+                
                 var canTurnField = typeof(EntityBehaviorRideable).GetField("CanTurn", BindingFlags.NonPublic | BindingFlags.Instance);
                 CanRideDelegate canTurnEvent = (CanRideDelegate)canTurnField.GetValue(this);
                 if (canTurnEvent != null && (controls.Left || controls.Right))
@@ -409,18 +412,17 @@ namespace Jaunt.Behaviors
                 
                 bool jumpPressed = controls.Jump && !prevJumpKey;
 
-                switch (jumpPressed)
+                if (jumpPressed)
                 {
-                    case true when entity.Properties.Habitat == EnumHabitat.Air:
-                        GroundToAir();
-                        break;
-                    case true when entity.Alive && (entity.OnGround || coyoteTimer > 0):
+                    if (entity.Alive && entity.World.ElapsedMilliseconds - lastJumpMs > 1500 && (entity.OnGround || coyoteTimer > 0))
+                    {
                         lastJumpMs = entity.World.ElapsedMilliseconds;
                         jumpNow = true;
-                        break;
-                    case true when !entity.OnGround:
+                    }
+                    else if (!entity.OnGround || entity.Properties.Habitat == EnumHabitat.Air)
+                    {
                         GroundToAir();
-                        break;
+                    }
                 }
                 
                 prevJumpKey = controls.Jump;
@@ -432,7 +434,7 @@ namespace Jaunt.Behaviors
                 if (eagent.Controls.IsFlying)
                 {
                     eagent.Controls.Down = controls.Sneak && entity.Pos.Y > 0;
-                    eagent.Controls.Up = controls.Jump && entity.Pos.Y < api.World.BlockAccessor.MapSizeY - 1;
+                    eagent.Controls.Up = controls.Jump && entity.Pos.Y < api.World.BlockAccessor.MapSizeY - 1 && !eagent.Controls.Gliding;
                     bool pitchDown = controls.Sneak && !controls.Jump;
                     bool pitchUp = controls.Jump && !controls.Sneak;
                     
@@ -735,6 +737,7 @@ namespace Jaunt.Behaviors
                 if (nowChange)
                 {
                     gaitSound?.Stop();
+                    gaitSound?.Dispose();
                     prevSoundCode = curSoundCode;
 
                     if (curSoundCode is null) return;
@@ -760,7 +763,7 @@ namespace Jaunt.Behaviors
             controls.WalkVector.Set(sinYaw, 0, cosYaw);
             controls.WalkVector.Mul(nowMoveSpeed * GlobalConstants.OverallSpeedMultiplier * ForwardSpeed);
 
-            // Make it walk along the wall, but not walk into the wall, which causes it to climb
+            //Make it walk along the wall, but not walk into the wall, which causes it to climb
             if (entity.Properties.RotateModelOnClimb && controls.IsClimbing && entity.ClimbingOnFace != null && entity.Alive)
             {
                 BlockFacing facing = entity.ClimbingOnFace;
@@ -768,11 +771,12 @@ namespace Jaunt.Behaviors
                 {
                     controls.WalkVector.X = 0;
                 }
-
+            
                 if (Math.Sign(facing.Normali.Z) == Math.Sign(controls.WalkVector.Z))
                 {
                     controls.WalkVector.Z = 0;
                 }
+            
             }
 
             if (entity.Swimming)
@@ -852,6 +856,15 @@ namespace Jaunt.Behaviors
             UpdateControlScheme();
             //ebg?.SetIdle();
         }
+
+        public void DismountAll()
+        {
+            foreach (var seat in Seats)
+            {
+                if (seat.Passenger is EntityPlayer plr)
+                    plr.TryUnmount();
+            }
+        }
         
         public GaitMeta GetFirstForwardGait()
         {
@@ -916,7 +929,7 @@ namespace Jaunt.Behaviors
             
             return damage;
         }
-        
+
         public override void OnGameTick(float dt)
         {
             timeSinceLastLog += dt;
