@@ -2,6 +2,9 @@
 {
     public class JauntConfig
     {
+        // Config
+        public string ConfigVersion { get; set; }
+        
         // Global Stamina Settings (these apply to all mods using Jaunt)
         public float GlobalMaxStaminaMultiplier { get; set; } = 1f;
         public float GlobalStaminaRegenMultiplier { get; set; } = 1f;
@@ -12,6 +15,7 @@
 
         // Stamina
         public bool EnableStamina { get; set; } = true;
+        
         // Hud
         public bool HideStaminaOnFull { get; set; } = false;
         public string StaminaBarLocation { get; set; } = "AboveHealth";
@@ -34,6 +38,7 @@
         public float DefaultExhaustionThreshold { get; set; } = 0.1f;
         public bool DefaultDontFleeWhenExhausted { get; set; } = false;
 
+        // Debug
         public bool GlobalDebugMode { get; set; } = false;
     }
 }

@@ -6,6 +6,7 @@ using System;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
+using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 using Vintagestory.Client.NoObf;
 
@@ -112,25 +113,51 @@ namespace Jaunt
             try
             {
                 // Load user config
-                var _config = api.LoadModConfig<JauntConfig>($"{ModId}.json");
+                var config = api.LoadModConfig<JauntConfig>($"{ModId}.json");
 
                 // If no user config, create one
-                if (_config == null)
+                if (config == null)
                 {
                     Logger.Warning("Missing config! Using default.");
-                    Config = new JauntConfig();
-                    api.StoreModConfig(Config, $"{ModId}.json");
+                    config = new JauntConfig();
+                    api.StoreModConfig(config, $"{ModId}.json");
                 }
-                else
+
+                if (config.ConfigVersion == null)
                 {
-                    Config = _config;
+                    Logger.Warning("Missing config version! Using default.");
+                    config.ConfigVersion = "0.0.0";
+                    api.StoreModConfig(config, $"{ModId}.json");
                 }
+                
+                // If config version is outdated run migration
+                if (GameVersion.IsNewerVersionThan(Mod.Info.Version, config.ConfigVersion))
+                {
+                    Logger.Warning($"Config outdated, migrating from version {config.ConfigVersion} to version {Mod.Info.Version}");
+                    config = MigrateConfig(config, config.ConfigVersion, Mod.Info.Version);
+                    api.StoreModConfig(config, $"{ModId}.json");
+                }
+                
+                Config = config;
             }
             catch (Exception ex)
             {
                 Logger.Error($"Could not load {ModId} config!");
                 Logger.Error(ex);
             }
+        }
+        
+        public static JauntConfig MigrateConfig(JauntConfig config, string oldVersion, string newVersion)
+        {
+            // Only run this check for mod configs created before our config versioning system (1.1.7)
+            if (GameVersion.IsNewerVersionThan("1.1.7", oldVersion))
+            {
+                // Make sure we disable debug mode for everyone since it wasnt supposed to be on
+                config.GlobalDebugMode = false;
+            }
+
+            config.ConfigVersion = newVersion;
+            return config;
         }
     }
 }
