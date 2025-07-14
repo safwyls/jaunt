@@ -408,13 +408,14 @@ namespace Jaunt.Behaviors
                 #region Jump Control
                 
                 bool jumpPressed = controls.Jump && !prevJumpKey;
-
+                
+                // 500ms timer on subsequent jumps eliminates buggy transitions when spamming jump
                 switch (jumpPressed)
                 {
                     case true when entity.Properties.Habitat == EnumHabitat.Air:
                         GroundToAir();
                         break;
-                    case true when entity.Alive && (entity.OnGround || coyoteTimer > 0):
+                    case true when entity.World.ElapsedMilliseconds - lastJumpMs > 500 && entity.Alive && (entity.OnGround || coyoteTimer > 0):
                         lastJumpMs = entity.World.ElapsedMilliseconds;
                         jumpNow = true;
                         break;
