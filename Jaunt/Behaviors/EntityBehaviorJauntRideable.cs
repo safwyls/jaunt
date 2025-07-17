@@ -206,7 +206,7 @@ namespace Jaunt.Behaviors
         private void Inventory_SlotModified(int obj)
         {
             UpdateControlScheme();
-            ebg?.SetIdle();
+            ebg?.SetIdle(false);
         }
 
         private void UpdateControlScheme()
@@ -321,6 +321,12 @@ namespace Jaunt.Behaviors
             nextGait ??= GetNextGait(forward, transition);
             ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
             ebg.CurrentGait = nextGait;
+            ebg.CurrentEnv = transition switch
+            {
+                TransitionEnum.landing => EnumHabitat.Land,
+                TransitionEnum.takeoff => EnumHabitat.Air,
+                _ => ebg.CurrentEnv
+            };
         }
 
         public void AirToGround()
@@ -432,16 +438,23 @@ namespace Jaunt.Behaviors
 
                 if (eagent.Controls.IsFlying)
                 {
-                    eagent.Controls.Down = controls.Sneak && entity.Pos.Y > 0;
-                    eagent.Controls.Up = controls.Jump && entity.Pos.Y < api.World.BlockAccessor.MapSizeY - 1;
-                    bool pitchDown = controls.Sneak && !controls.Jump;
-                    bool pitchUp = controls.Jump && !controls.Sneak;
+                    eagent.Controls.Down = ebg.CurrentGait.CanDescend && controls.Sneak && entity.Pos.Y > 0;
+                    eagent.Controls.Up = ebg.CurrentGait.CanAscend && controls.Jump && entity.Pos.Y < api.World.BlockAccessor.MapSizeY - 1;
+
+                    bool pitchDown = eagent.Controls.Down && !controls.Jump;
+                    bool pitchUp = eagent.Controls.Up && !controls.Sneak;
                     
                     // This gives a linear tilt angled from 6 to 30 degrees at yaw multiplier of 4 down to 0
                     float tiltAngle = GameMath.DEG2RAD * (ebg.CurrentGait.YawMultiplier  * 30f); // Tilt angle for the flight control
                     
                     var normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
+
+                    // Climbspeed code won't do more than set direction since the ascend/descend speed is fixed in PModuleInAir right now
+                    // need to extend that or patch it in vanilla
                     var climbSpeed = 1f + MathF.Sin(tiltAngle) * normalizedMoveSpeed * ebg.CurrentGait.YawMultiplier;
+                    if (climbSpeed > 0 && ebg.CurrentGait.AscendSpeed != 0) climbSpeed = ebg.CurrentGait.AscendSpeed;
+                    if (climbSpeed < 0 && ebg.CurrentGait.DescendSpeed != 0) climbSpeed = -Math.Abs(ebg.CurrentGait.DescendSpeed);
+                    
                     VerticalSpeed = climbSpeed * (pitchUp ? 1 : pitchDown ? -1 : 0);
                     eagent.Controls.MovespeedMultiplier = climbSpeed == 0 ? 1f : climbSpeed;
                     
@@ -478,7 +491,7 @@ namespace Jaunt.Behaviors
                 if (forwardPressed && ebg.IsIdle) SpeedUp();
 
                 // Handle backward to idle change without sprint key
-                if (forwardPressed && ebg.IsBackward) ebg.SetIdle();
+                if (forwardPressed && ebg.IsBackward) ebg.SetIdle(false);
 
                 // Cycle up with sprint
                 if (ebg.IsForward && sprintPressed && nowMs - lastGaitChangeMs > 300)
@@ -609,31 +622,49 @@ namespace Jaunt.Behaviors
 
             string nowTurnAnim = null;
             string nowClimbAnim = null;
-            if (ForwardSpeed >= 0)
+            nowTurnAnim = AngularVelocity switch
             {
-                nowTurnAnim = AngularVelocity switch
+                > 0.001 => "turn-left",
+                < -0.001 => "turn-right",
+                _ => null
+            };
+            
+            if (eagent.Controls.IsFlying)
+            {
+                // Maybe uncomment this if we want to use custom fly-turn animations
+                // Otherwise we blend turn-left/right with the gait animation
+                // This does slightly reduce the bank angle (but we are still getting some from the entity swivel
+                // if (ForwardSpeed > 0)
+                // {
+                //     nowTurnAnim = AngularVelocity switch
+                //     {
+                //         > 0.001 => "fly-turn-left",
+                //         < -0.001 => "fly-turn-right",
+                //         _ => null
+                //     };
+                // }
+                // else
+                // {
+                //     nowTurnAnim = AngularVelocity switch
+                //     {
+                //         > 0.001 => "turn-left",
+                //         < -0.001 => "turn-right",
+                //         _ => null
+                //     };
+                // }
+                
+                nowClimbAnim = VerticalSpeed switch
                 {
-                    > 0.001 => "turn-left",
-                    < -0.001 => "turn-right",
+                    > 0.001 => "fly-up",
+                    < -0.001 => "fly-down",
                     _ => null
-                };
-
-                if (eagent.Controls.IsFlying)
-                {
-                    nowClimbAnim = VerticalSpeed switch
-                    {
-                        > 0.001 => "fly-up",
-                        < -0.001 => "fly-down",
-                        _ => null
-                    };   
-                }
+                };   
             }
             
             if (nowTurnAnim != curTurnAnim)
             {
                 if (curTurnAnim != null) eagent.StopAnimation(curTurnAnim);
-                var anim = (ForwardSpeed == 0 ? "idle-" : eagent.Controls.IsFlying ? "fly-" : "") + nowTurnAnim;
-                curTurnAnim = anim;
+                var anim = (ForwardSpeed == 0 ? "idle-" : "") + (curTurnAnim = nowTurnAnim);
                 eagent.StartAnimation(anim);
             }
             
@@ -805,7 +836,7 @@ namespace Jaunt.Behaviors
 
         public new void Stop()
         {
-            ebg.SetIdle();
+            ebg.SetIdle(false);
             eagent.Controls.StopAllMovement();
             eagent.Controls.WalkVector.Set(0, 0, 0);
             eagent.Controls.FlyVector.Set(0, 0, 0);
@@ -852,7 +883,7 @@ namespace Jaunt.Behaviors
         public new void DidMount(EntityAgent entityAgent)
         {
             UpdateControlScheme();
-            //ebg?.SetIdle();
+            ebg?.SetIdle(entityAgent.OnGround);
         }
         
         public GaitMeta GetFirstForwardGait()
@@ -925,16 +956,16 @@ namespace Jaunt.Behaviors
 
             if (timeSinceLastLog > 1f)
             {
-                // if (eagent.Controls.IsFlying)
-                // {
-                //     foreach (var anim in eagent.AnimManager.ActiveAnimationsByAnimCode)
-                //     {
-                //         ModSystem.Logger.Notification($"Active Anim: {anim.Key}");   
-                //     }
-                //     ModSystem.Logger.Notification($"==============================");
-                //
-                //     timeSinceLastLog = 0f;   
-                // }
+                if (eagent.Controls.IsFlying)
+                {
+                    foreach (var anim in eagent.AnimManager.ActiveAnimationsByAnimCode)
+                    {
+                        ModSystem.Logger.Notification($"Active Anim: {anim.Key}");   
+                    }
+                    ModSystem.Logger.Notification($"==============================");
+                
+                    timeSinceLastLog = 0f;   
+                }
             }
             
             if (api.Side == EnumAppSide.Server) UpdateAngleAndMotion(dt);

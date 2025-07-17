@@ -6,21 +6,26 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
 
 namespace Jaunt.Behaviors
 {
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
-        public float TurnRadius { get; set; } = 1f / 3.5f;
-        private float? _yawMultiplier = null;
-        public float YawMultiplier
-        {
-            get => _yawMultiplier ?? 1f / TurnRadius;
-            set => _yawMultiplier = value;
-        }
+        public float TurnRadius { get; set; } = 1f;
+        public float YawMultiplier { get; set; } = 1f;
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
+        
+        public bool CanAscend { get; set; } = false;
+        
+        public bool CanDescend { get; set; } = true;
+        
+        public float AscendSpeed { get; set; }
+        
+        public float DescendSpeed { get; set; }
+        
         public float StaminaCost { get; set; } = 0f;
         public string FallbackGaitCode { get; set; } // Gait to slow down to such as when fatiguing
         public AssetLocation Sound { get; set; }
@@ -30,15 +35,25 @@ namespace Jaunt.Behaviors
     public class EntityBehaviorGait : EntityBehavior
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
+        
+        private static string AttributeKey => $"{ModSystem.ModId}:gait";
         public override string PropertyName()
         {
-            return $"{ModSystem.ModId}:gait";
+            return AttributeKey;
         }
+        
         public readonly FastSmallDictionary<string, GaitMeta> Gaits = new(1);
+        private ITreeAttribute gaitTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
         public GaitMeta CurrentGait
         {
             get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
             set => entity.WatchedAttributes.SetString("currentgait", value.Code);
+        }
+        
+        public EnumHabitat CurrentEnv
+        {
+            get => Enum.Parse<EnumHabitat>(gaitTree.GetString("currentenv"));
+            set => gaitTree.SetString("currentenv", value.ToString());
         }
 
         public bool EnableDamageHandler = false;
@@ -65,6 +80,7 @@ namespace Jaunt.Behaviors
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
+        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
         public EntityBehaviorGait(Entity entity) : base(entity)
@@ -89,7 +105,7 @@ namespace Jaunt.Behaviors
                 
                 if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
-
+            
             string idleGaitCode = attributes["idleGait"].AsString("idle");
             string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
             string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
@@ -98,13 +114,28 @@ namespace Jaunt.Behaviors
             IdleFlyingGait = Gaits[idleFlyingGaitCode];
             IdleSwimmingGait = Gaits[idleSwimmingGaitCode];
             
-            // Set initial gait
-            // This is important to make sure CurrentGait can be called by other behaviors
-            // Todo: Review this for a potentially more robust way of picking the initial gait
-            if (!entity.OnGround && IdleFlyingGait is not null) 
-                CurrentGait = IdleFlyingGait;
-            else 
-                CurrentGait = IdleGait;
+            var gaitTree = entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
+            
+            if (gaitTree == null)
+            {
+                entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
+                
+                // These only get set on new initializations, not on reloads
+                CurrentGait = Gaits[attributes["currentgait"].AsString(idleGaitCode)];
+                CurrentEnv = Enum.Parse<EnumHabitat>(attributes["currentenv"].AsString(nameof(EnumHabitat.Land)));
+                MarkDirty();
+            }
+            
+            ModSystem.Logger.Debug($"API: {api.Side.ToString()} Current Env: {CurrentEnv.ToString()}");
+
+            CurrentGait = CurrentEnv switch
+            {
+                EnumHabitat.Land => IdleGait,
+                EnumHabitat.Air => IdleFlyingGait,
+                EnumHabitat.Sea => IdleSwimmingGait,
+                EnumHabitat.Underwater => IdleSwimmingGait,
+                _ => IdleGait
+            };
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -115,11 +146,15 @@ namespace Jaunt.Behaviors
 
         public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 1 / 3.5f; // Default turn radius if not set
 
-        public void SetIdle() => CurrentGait = eagent.Controls.IsFlying ? IdleFlyingGait : IdleGait;
         public bool IsIdle => eagent.Controls.IsFlying ? CurrentGait == IdleFlyingGait : CurrentGait == IdleGait;
         public bool IsBackward => CurrentGait.Backwards || CurrentGait.MoveSpeed < 0f;
         public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
+        public void SetIdle(bool forceGround)
+        {
+            CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingGait : IdleGait;
+            if (forceGround) eagent.Controls.IsFlying = false;
+        }
         public void ApplyGaitFatigue(float dt)
         {
             if (api.Side != EnumAppSide.Server || ebs == null) return;
@@ -144,6 +179,11 @@ namespace Jaunt.Behaviors
             base.OnGameTick(dt);
 
             ApplyGaitFatigue(dt);
+        }
+        
+        public void MarkDirty()
+        {
+            entity.WatchedAttributes.MarkPathDirty(AttributeKey);
         }
     }
 }

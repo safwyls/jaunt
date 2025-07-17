@@ -125,7 +125,7 @@ namespace Jaunt.Behaviors
         { 
         }
 
-        public override void Initialize(EntityProperties properties, JsonObject typeAttributes)
+        public override void Initialize(EntityProperties properties, JsonObject attributes)
         {
             if (DebugMode) ModSystem.Logger.Notification(Lang.Get("jaunt:debug-stamina-init", entity.EntityId));
 
@@ -150,29 +150,29 @@ namespace Jaunt.Behaviors
             {
                 entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
 
-                MaxStamina = typeAttributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
+                MaxStamina = attributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
                 // These only get set on new initializations, not on reloads
-                Stamina = typeAttributes["currentstamina"].AsFloat(MaxStamina); // Start with full stamina
+                Stamina = attributes["currentstamina"].AsFloat(MaxStamina); // Start with full stamina
                 Sprinting = false; // Not sprinting by default
             }
 
             // Refresh stamina config values from json
-            MaxStamina = typeAttributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
+            MaxStamina = attributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
             Stamina = Math.Clamp(Stamina, 0, MaxStamina); // Ensure stamina is in bounds on reload in case max stamina changed
-            SprintFatigue = typeAttributes["sprintfatigue"].AsFloat(ModSystem.Config.DefaultSprintFatigue);
-            SwimFatigue = typeAttributes["swimfatigue"].AsFloat(ModSystem.Config.DefaultSwimFatigue);
-            BaseFatigueRate = typeAttributes["basefatiguerate"].AsFloat(ModSystem.Config.DefaultBaseFatigueRate);
-            StaminaRegenRate = typeAttributes["staminaregenrate"].AsFloat(ModSystem.Config.DefaultStaminaRegenRate);
-            RegenPenaltyWounded = typeAttributes["regenpenaltywounded"].AsFloat(ModSystem.Config.DefaultRegenPenaltyWounded);
-            RegenPenaltyMounted = typeAttributes["regenpenaltymounted"].AsFloat(ModSystem.Config.DefaultRegenPenaltyMounted);
-            ExhaustionThreshold = typeAttributes["exhaustionthreshold"].AsFloat(ModSystem.Config.DefaultExhaustionThreshold);
-            DontFleeWhenExhausted = typeAttributes["dontfleewhenexhausted"].AsBool(ModSystem.Config.DefaultDontFleeWhenExhausted);
+            SprintFatigue = attributes["sprintfatigue"].AsFloat(ModSystem.Config.DefaultSprintFatigue);
+            SwimFatigue = attributes["swimfatigue"].AsFloat(ModSystem.Config.DefaultSwimFatigue);
+            BaseFatigueRate = attributes["basefatiguerate"].AsFloat(ModSystem.Config.DefaultBaseFatigueRate);
+            StaminaRegenRate = attributes["staminaregenrate"].AsFloat(ModSystem.Config.DefaultStaminaRegenRate);
+            RegenPenaltyWounded = attributes["regenpenaltywounded"].AsFloat(ModSystem.Config.DefaultRegenPenaltyWounded);
+            RegenPenaltyMounted = attributes["regenpenaltymounted"].AsFloat(ModSystem.Config.DefaultRegenPenaltyMounted);
+            ExhaustionThreshold = attributes["exhaustionthreshold"].AsFloat(ModSystem.Config.DefaultExhaustionThreshold);
+            DontFleeWhenExhausted = attributes["dontfleewhenexhausted"].AsBool(ModSystem.Config.DefaultDontFleeWhenExhausted);
             MarkDirty();
 
             if (MaxStamina <= 0)
             {
                 // If max stamina is not set, use the type attribute value
-                MaxStamina = typeAttributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
+                MaxStamina = attributes["maxstamina"].AsFloat(ModSystem.Config.DefaultMaxStamina);
                 MarkDirty();
             }
 
