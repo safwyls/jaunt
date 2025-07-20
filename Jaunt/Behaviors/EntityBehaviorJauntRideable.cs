@@ -321,12 +321,6 @@ namespace Jaunt.Behaviors
             nextGait ??= GetNextGait(forward, transition);
             ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
             ebg.CurrentGait = nextGait;
-            ebg.CurrentEnv = transition switch
-            {
-                TransitionEnum.landing => EnumHabitat.Land,
-                TransitionEnum.takeoff => EnumHabitat.Air,
-                _ => ebg.CurrentEnv
-            };
         }
 
         public void AirToGround()
@@ -741,7 +735,7 @@ namespace Jaunt.Behaviors
             {
                 var gaitMeta = ebg.CurrentGait;
 
-                curSoundCode = eagent.Swimming || notOnGroundAccum > 0.2 ? null : gaitMeta.Sound;
+                curSoundCode = gaitMeta.Sound;
 
                 bool nowChange = curSoundCode != prevSoundCode;
 
