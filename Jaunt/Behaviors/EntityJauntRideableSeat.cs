@@ -75,16 +75,15 @@ namespace Jaunt.Behaviors
         public void OnJauntControls(EnumEntityAction action, bool on, ref EnumHandling handled)
         {
             // This is only called server side, don't try and map sneak/jump controls here
-            
-            EntityAgent eagent = Entity as EntityAgent;
+
             if (action == EnumEntityAction.Sneak && on)
             {
-                if (!eagent.Controls.IsFlying)
+                if (!((EntityAgent)Entity).Controls.IsFlying)
                 {
                     (Passenger as EntityAgent)?.TryUnmount();
                     controls.StopAllMovement();
                 }
-            }            
+            }
 
             return;
         }
