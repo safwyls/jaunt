@@ -13,6 +13,7 @@ namespace Jaunt.Behaviors
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
+        public EnumHabitat Environment { get; set; }
         public float YawMultiplier { get; set; } = 1f;
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
@@ -24,6 +25,7 @@ namespace Jaunt.Behaviors
         public string FallbackGaitCode { get; set; } // Gait to slow down to such as when fatiguing
         public AssetLocation Sound { get; set; }
         public AssetLocation IconTexture { get; set; }
+        public AnimationMetaData Anim { get; set; }
     }
 
     public class EntityBehaviorGait : EntityBehavior
@@ -41,14 +43,14 @@ namespace Jaunt.Behaviors
         public GaitMeta CurrentGait
         {
             get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
-            set => entity.WatchedAttributes.SetString("currentgait", value.Code);
+            set
+            {
+                entity.WatchedAttributes.SetString("currentgait", value.Code);
+                MarkDirty();
+            }
         }
 
-        public EnumHabitat CurrentEnv
-        {
-            get => Enum.Parse<EnumHabitat>(gaitTree.GetString("currentenv"));
-            set => gaitTree.SetString("currentenv", value.ToString());
-        }
+        public EnumHabitat CurrentEnv => CurrentGait.Environment;
 
         public bool EnableDamageHandler = false;
         public GaitMeta IdleGait;
@@ -116,7 +118,6 @@ namespace Jaunt.Behaviors
 
                 // These only get set on new initializations, not on reloads
                 CurrentGait = Gaits[attributes["currentgait"].AsString(idleGaitCode)];
-                CurrentEnv = Enum.Parse<EnumHabitat>(attributes["currentenv"].AsString(nameof(EnumHabitat.Land)));
                 MarkDirty();
             }
 
