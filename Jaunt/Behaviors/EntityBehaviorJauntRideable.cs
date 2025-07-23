@@ -41,6 +41,7 @@ namespace Jaunt.Behaviors
         #region Internal
 
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
+        internal float flyingDragFactor = 0f;
         internal bool prevForwardKey, prevBackwardKey, prevSprintKey, prevJumpKey;
         internal float notOnGroundAccum;
         internal string prevSoundCode;
@@ -101,6 +102,7 @@ namespace Jaunt.Behaviors
 
             Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
+            flyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * (float)attributes["flyingDragFactor"].AsFloat(1);
             GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
             FlyableGaitOrderCodes = attributes["flyableGaitOrder"].AsArray<string>();
 
@@ -439,8 +441,9 @@ namespace Jaunt.Behaviors
                     bool pitchUp = eagent.Controls.Up && !controls.Sneak;
 
                     float normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
+                    float verticalMoveSpeed = Math.Min(0.2f, dt) * GlobalConstants.BaseMoveSpeed * controls.MovespeedMultiplier / 2;
 
-                    VerticalSpeed = pitchUp ? ebg.CurrentGait.AscendSpeed : pitchDown ? -Math.Abs(ebg.CurrentGait.DescendSpeed) : 0;
+                    VerticalSpeed = verticalMoveSpeed * (pitchUp ? ebg.CurrentGait.AscendSpeed : pitchDown ? -Math.Abs(ebg.CurrentGait.DescendSpeed) : 0);
 
                     if (eagent.Controls.Down)
                     {
@@ -657,6 +660,7 @@ namespace Jaunt.Behaviors
             if (!shouldMove && !jumpNow)
             {
                 if (curControlMeta != null) Stop();
+
                 // Idle states for each environment
                 if (eagent.Swimming)
                 {
@@ -808,7 +812,9 @@ namespace Jaunt.Behaviors
             if (controls.IsFlying)
             {
                 controls.FlyVector.Set(controls.WalkVector);
-                eagent.Pos.Motion.Y += VerticalSpeed;
+                if (VerticalSpeed != 0) ModSystem.Logger.Notification($"YMotion: {eagent.Pos.Motion.Y}");
+                eagent.Pos.Motion.Y = VerticalSpeed;
+                if (VerticalSpeed != 0) ModSystem.Logger.Notification($"Modified YMotion: {eagent.Pos.Motion.Y}");
             }
         }
 
@@ -817,7 +823,6 @@ namespace Jaunt.Behaviors
             ebg.SetIdle(false);
             eagent.Controls.StopAllMovement();
             eagent.Controls.WalkVector.Set(0, 0, 0);
-            eagent.Controls.FlyVector.Set(0, 0, 0);
             shouldMove = false;
             if (curControlMeta != null && curControlMeta.Animation != "jump")
             {
@@ -966,6 +971,11 @@ namespace Jaunt.Behaviors
             else
             {
                 if (entity.Swimming && eagent is not null) eagent.Controls.FlyVector.Y = 0.2;
+
+                if (eagent.Controls.IsFlying)
+                {
+                    eagent.Controls.FlyVector.Scale((float)Math.Pow(flyingDragFactor, dt * 33));
+                }
             }
 
             UpdateSoundState(dt);

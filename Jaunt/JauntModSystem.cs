@@ -134,7 +134,7 @@ namespace Jaunt
                     config.ConfigVersion = "0.0.0";
                     api.StoreModConfig(config, $"{ModId}.json");
                 }
-                
+
                 // If config version is outdated run migration
                 if (GameVersion.IsNewerVersionThan(Mod.Info.Version, config.ConfigVersion))
                 {
@@ -142,7 +142,7 @@ namespace Jaunt
                     config = MigrateConfig(config, config.ConfigVersion, Mod.Info.Version);
                     api.StoreModConfig(config, $"{ModId}.json");
                 }
-                
+
                 Config = config;
             }
             catch (Exception ex)
@@ -151,7 +151,7 @@ namespace Jaunt
                 Logger.Error(ex);
             }
         }
-        
+
         public static JauntConfig MigrateConfig(JauntConfig config, string oldVersion, string newVersion)
         {
             // Only run this check for mod configs created before our config versioning system (1.1.7)
