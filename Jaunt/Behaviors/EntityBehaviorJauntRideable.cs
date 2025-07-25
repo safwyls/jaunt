@@ -438,9 +438,7 @@ namespace Jaunt.Behaviors
                     bool pitchDown = eagent.Controls.Down && !controls.Jump;
                     bool pitchUp = eagent.Controls.Up && !controls.Sneak;
 
-                    float normalizedMoveSpeed = ebg.CurrentGait.MoveSpeed / GetFirstForwardFlyingGait().MoveSpeed;
                     float verticalMoveSpeed = Math.Min(0.2f, dt) * GlobalConstants.BaseMoveSpeed * controls.MovespeedMultiplier / 2;
-
                     VerticalSpeed = verticalMoveSpeed * (pitchUp ? ebg.CurrentGait.AscendSpeed : pitchDown ? -Math.Abs(ebg.CurrentGait.DescendSpeed) : 0);
 
                     if (eagent.Controls.Down)
@@ -460,10 +458,6 @@ namespace Jaunt.Behaviors
                 bool nowForwards = controls.Forward;
                 bool nowBackwards = controls.Backward;
                 bool nowSprint = controls.Sprint;
-
-                // Toggling this off so that the next press of the sprint key will be a fresh press
-                // Need this to allow cycling up with sprint rather than just treating it as a boolean toggle
-                controls.Sprint = false;
 
                 // Detect if current press is a fresh press
                 bool forwardPressed = nowForwards && !prevForwardKey;
