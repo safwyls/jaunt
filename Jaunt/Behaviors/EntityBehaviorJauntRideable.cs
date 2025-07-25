@@ -41,7 +41,6 @@ namespace Jaunt.Behaviors
         #region Internal
 
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
-        internal float flyingDragFactor = 0f;
         internal bool prevForwardKey, prevBackwardKey, prevSprintKey, prevJumpKey;
         internal float notOnGroundAccum;
         internal string prevSoundCode;
@@ -107,7 +106,6 @@ namespace Jaunt.Behaviors
 
             Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
-            flyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * (float)attributes["flyingDragFactor"].AsFloat(1);
             GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
             FlyableGaitOrderCodes = attributes["flyableGaitOrder"].AsArray<string>();
 
@@ -817,9 +815,7 @@ namespace Jaunt.Behaviors
             if (controls.IsFlying)
             {
                 controls.FlyVector.Set(controls.WalkVector);
-                if (VerticalSpeed != 0) ModSystem.Logger.Notification($"YMotion: {eagent.Pos.Motion.Y}");
                 eagent.Pos.Motion.Y = VerticalSpeed;
-                if (VerticalSpeed != 0) ModSystem.Logger.Notification($"Modified YMotion: {eagent.Pos.Motion.Y}");
             }
         }
 
@@ -991,7 +987,11 @@ namespace Jaunt.Behaviors
 
                 if (eagent.Controls.IsFlying)
                 {
-                    eagent.Controls.FlyVector.Scale((float)Math.Pow(flyingDragFactor, dt * 33));
+                    eagent.Controls.FlyVector.Scale((float)Math.Pow(ebg.CurrentGait.DragFactor ?? 0, dt * 33));
+                }
+                else
+                {
+                    eagent.Controls.WalkVector.Scale((float)Math.Pow(ebg.CurrentGait.DragFactor ?? 0, dt * 33));
                 }
             }
 

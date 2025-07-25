@@ -14,6 +14,7 @@ namespace Jaunt.Behaviors
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
         public EnumHabitat Environment { get; set; }
+        public double? DragFactor { get; set; } = null;
         public float YawMultiplier { get; set; } = 1f;
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
@@ -56,6 +57,9 @@ namespace Jaunt.Behaviors
         public GaitMeta IdleGait;
         public GaitMeta IdleFlyingGait;
         public GaitMeta IdleSwimmingGait;
+        public double FlyingDragFactor;
+        public double SwimmingDragFactor;
+        public double GroundDragFactor;
         public GaitMeta FallbackGait => CurrentGait.FallbackGaitCode is null ? IdleGait : Gaits[CurrentGait.FallbackGaitCode];
         public GaitMeta CascadingFallbackGait(int n)
         {
@@ -92,6 +96,13 @@ namespace Jaunt.Behaviors
             api = entity.Api;
             capi = api as ICoreClientAPI;
 
+            // Order of operations matters
+            // 1. Get drag factors
+            FlyingDragFactor = attributes["flyingGaitDrag"].AsDouble();
+            SwimmingDragFactor = attributes["swimmingGaitDrag"].AsDouble();
+            GroundDragFactor = attributes["groundGaitDrag"].AsDouble();
+
+            // 2. Build gait list
             var gaitarray = attributes["gaits"].AsArray<GaitMeta>();
             foreach (var gait in gaitarray)
             {
@@ -99,9 +110,28 @@ namespace Jaunt.Behaviors
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
                 gait.Sound?.WithPathPrefixOnce("sounds/");
 
+                // First check for gait specific drag factors
+                // If missing apply environment drag factors
+                // If those aren't set they default to 0 (max drag)
+                switch (gait.Environment)
+                {
+                    case EnumHabitat.Air:
+                        gait.DragFactor ??= FlyingDragFactor;
+                        break;
+                    case EnumHabitat.Sea:
+                    case EnumHabitat.Underwater:
+                        gait.DragFactor ??= SwimmingDragFactor;
+                        break;
+                    case EnumHabitat.Land:
+                    default:
+                        gait.DragFactor ??= GroundDragFactor;
+                        break;
+                }
+
                 if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
 
+            // 3. Set idle gaits
             string idleGaitCode = attributes["idleGait"].AsString("idle");
             string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
             string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
@@ -110,6 +140,7 @@ namespace Jaunt.Behaviors
             IdleFlyingGait = Gaits[idleFlyingGaitCode];
             IdleSwimmingGait = Gaits[idleSwimmingGaitCode];
 
+            // 4. Initialize gait tree
             var gaitTree = entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
 
             if (gaitTree == null)
@@ -121,8 +152,6 @@ namespace Jaunt.Behaviors
                 MarkDirty();
             }
 
-            ModSystem.Logger.Debug($"API: {api.Side.ToString()} Current Env: {CurrentEnv.ToString()}");
-
             CurrentGait = CurrentEnv switch
             {
                 EnumHabitat.Land => IdleGait,
@@ -131,6 +160,7 @@ namespace Jaunt.Behaviors
                 EnumHabitat.Underwater => IdleSwimmingGait,
                 _ => IdleGait
             };
+
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
@@ -139,7 +169,12 @@ namespace Jaunt.Behaviors
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
         }
 
-        public bool IsIdle => eagent.Controls.IsFlying ? CurrentGait == IdleFlyingGait : CurrentGait == IdleGait;
+        public bool IsIdle => eagent.Controls.IsFlying
+            ? CurrentGait == IdleFlyingGait
+            : eagent.Swimming && IdleSwimmingGait != null
+                ? CurrentGait == IdleSwimmingGait
+                : CurrentGait == IdleGait;
+
         public bool IsBackward => CurrentGait.Backwards || CurrentGait.MoveSpeed < 0f;
         public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
