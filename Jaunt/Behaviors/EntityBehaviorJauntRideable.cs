@@ -13,13 +13,6 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    public enum TransitionEnum
-    {
-        landing,
-        takeoff,
-        none
-    }
-
     public class JauntControlMeta : ControlMeta
     {
         public float MoveSpeedMultiplier { get; set; } = 0.7f; // Multiplier for the movement speed of the control
@@ -247,11 +240,11 @@ namespace Jaunt.Behaviors
         /// <param name="gait"></param>
         /// <param name="transition"></param>
         /// <returns></returns>
-        public GaitMeta TranslateGait(GaitMeta gait, TransitionEnum transition)
+        public GaitMeta TranslateGait(GaitMeta gait, EnumHabitat? nextEnv)
         {
-            switch (transition)
+            switch (nextEnv)
             {
-                case TransitionEnum.landing:
+                case EnumHabitat.Land:
                     if (ebg.IsIdle) return ebg.IdleGait;
                     return RideableGaitOrder.FirstOrDefault(g =>
                         g.MoveSpeed >= gait.MoveSpeed
@@ -259,7 +252,7 @@ namespace Jaunt.Behaviors
                            ?? (gait.Backwards
                                ? RideableGaitOrder.FirstOrDefault()
                                : RideableGaitOrder.LastOrDefault());
-                case TransitionEnum.takeoff:
+                case EnumHabitat.Air:
                     if (ebg.IsIdle) return ebg.IdleFlyingGait;
                     return FlyableGaitOrder.FirstOrDefault(g =>
                         g.MoveSpeed >= gait.MoveSpeed
@@ -267,18 +260,19 @@ namespace Jaunt.Behaviors
                            ?? (gait.Backwards
                                ? FlyableGaitOrder.FirstOrDefault()
                                : FlyableGaitOrder.LastOrDefault());
-                case TransitionEnum.none:
+                case EnumHabitat.Sea:
+                case EnumHabitat.Underwater:
                 default:
                     return gait;
             }
         }
 
-        public GaitMeta GetNextGait(bool forward = true, TransitionEnum transition = TransitionEnum.none, GaitMeta currentGait = null)
+        public GaitMeta GetNextGait(bool forward = true, EnumHabitat? nextEnv = null, GaitMeta currentGait = null)
         {
             currentGait ??= ebg.CurrentGait;
 
             // Transition gaits when landing or taking off
-            if (transition != TransitionEnum.none) return TranslateGait(currentGait, transition);
+            if (nextEnv != null) return TranslateGait(currentGait, nextEnv);
 
             // Eventually this should be changed to allow for more advanced swimming gaits
             if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
@@ -319,12 +313,12 @@ namespace Jaunt.Behaviors
             }
         }
 
-        public void SetNextGait(bool forward, TransitionEnum transition = TransitionEnum.none, GaitMeta nextGait = null)
+        public void SetNextGait(bool forward, EnumHabitat? nextEnv = null, GaitMeta nextGait = null)
         {
             if (api.Side != EnumAppSide.Server) return;
 
-            nextGait ??= GetNextGait(forward, transition);
-            ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
+            nextGait ??= GetNextGait(forward, nextEnv);
+            if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
             ebg.CurrentGait = nextGait;
         }
 
@@ -333,14 +327,14 @@ namespace Jaunt.Behaviors
             entity.Pos.Roll = 0;
             eagent.Controls.IsFlying = false;
             eagent.Controls.Down = eagent.Controls.Up = false;
-            SetNextGait(true, transition: TransitionEnum.landing);
+            SetNextGait(true, EnumHabitat.Land);
         }
 
         public void GroundToAir()
         {
             if (!CanFly) return;
             eagent.Controls.IsFlying = true;
-            SetNextGait(true, transition: TransitionEnum.takeoff);
+            SetNextGait(true, EnumHabitat.Air);
         }
 
         public override Vec2d SeatsToMotion(float dt)
