@@ -983,14 +983,14 @@ namespace Jaunt.Behaviors
             else
             {
                 if (entity.Swimming && eagent is not null) eagent.Controls.FlyVector.Y = 0.2;
-
+                var dragFactor = (float)Math.Pow(ebg.CurrentGait.DragFactor ?? 0, dt * 33);
                 if (eagent.Controls.IsFlying)
                 {
-                    eagent.Controls.FlyVector.Scale((float)Math.Pow(ebg.CurrentGait.DragFactor ?? 0, dt * 33));
+                    eagent.Controls.FlyVector.Scale(dragFactor);
                 }
                 else
                 {
-                    eagent.Controls.WalkVector.Scale((float)Math.Pow(ebg.CurrentGait.DragFactor ?? 0, dt * 33));
+                    eagent.Controls.WalkVector.Scale(dragFactor);
                 }
             }
 
