@@ -9,6 +9,7 @@ using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
+using Vintagestory.Client.NoObf;
 using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
@@ -492,6 +493,10 @@ namespace Jaunt.Behaviors
 
                     lastGaitChangeMs = nowMs;
                 }
+
+                // Toggling this off so that the next press of the sprint key will be a fresh press
+                // Need this to allow cycling up with sprint rather than just treating it as a boolean toggle
+                if (ClientSettings.ToggleSprint) controls.Sprint = false;
 
                 prevSprintKey = nowSprint;
                 prevForwardKey = scheme == EnumControlScheme.Press && nowForwards;
