@@ -98,9 +98,10 @@ namespace Jaunt.Behaviors
 
             // Order of operations matters
             // 1. Get drag factors
-            FlyingDragFactor = attributes["flyingGaitDrag"].AsDouble();
-            SwimmingDragFactor = attributes["swimmingGaitDrag"].AsDouble();
-            GroundDragFactor = attributes["groundGaitDrag"].AsDouble();
+            FlyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * attributes["flyingGaitDrag"].AsFloat();
+            SwimmingDragFactor = 1 - (1 - GlobalConstants.WaterDrag) * attributes["swimmingGaitDrag"].AsFloat();
+            // 0.3f comes from vanilla ground drag code
+            GroundDragFactor = 1 - 0.3f * attributes["groundGaitDrag"].AsFloat();
 
             // 2. Build gait list
             var gaitarray = attributes["gaits"].AsArray<GaitMeta>();
