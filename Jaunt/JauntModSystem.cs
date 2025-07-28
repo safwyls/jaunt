@@ -37,7 +37,7 @@ namespace Jaunt
             Instance = this;
             this.api = api;
 
-            api.RegisterItemClass(ModId + ":itemflute", typeof(ItemJauntFlute));
+            api.RegisterItemClass(ModId + ":iteminstrument", typeof(ItemJauntInstrument));
             api.RegisterEntity(ModId + ":entityflyingagent", typeof(EntityFlyingAgent));
             api.RegisterEntityBehaviorClass(ModId + ":gait", typeof(EntityBehaviorGait));
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));

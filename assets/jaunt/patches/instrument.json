@@ -3,6 +3,12 @@
     "file": "game:itemtypes/utility/instrument",
     "op": "replace",
     "path": "/class",
-    "value": "jaunt:itemflute"
+    "value": "jaunt:iteminstrument"
+  },
+  {
+    "file": "game:itemtypes/utility/instrument",
+    "op": "addmerge",
+    "path": "/attributes/groupCode",
+    "value": "mountableanimal"
   }
 ]
