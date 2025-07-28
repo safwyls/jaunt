@@ -4,7 +4,7 @@
     "name": "Jaunt: Extended Riding System",
     "authors": ["safwyl", "sekelsta", "Shintharo12", "Freakyuser396"],
     "description": "Library providing an extended rideable system with additional control patterns and stamina",
-    "version": "2.0.0-rc.4",
+    "version": "2.0.0-rc.5",
     "dependencies": {
         "game": "1.20.11"
     }
