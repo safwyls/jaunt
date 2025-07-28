@@ -28,7 +28,8 @@ namespace Jaunt.Items
             lockedGroupCode = Attributes["groupCode"].AsString();
             isLocked = !string.IsNullOrEmpty(lockedGroupCode);
 
-            callSound = Attributes["callSound"].AsObject(new AssetLocation("sounds/instrument/elkcall").WithPathPrefixOnce("sounds/"));
+            var soundLoc = Attributes["callSound"].AsString() ?? "game:sounds/instrument/elkcall";
+            callSound = new AssetLocation(soundLoc).WithPathPrefixOnce("sounds/");
 
             capi = api as ICoreClientAPI;
 
