@@ -20,12 +20,15 @@ namespace Jaunt.Items
         private ICoreClientAPI capi;
         private bool isLocked;
         private string lockedGroupCode;
+        private AssetLocation callSound;
         public override void OnLoaded(ICoreAPI api)
         {
             base.OnLoaded(api);
 
             lockedGroupCode = Attributes["groupCode"].AsString();
             isLocked = !string.IsNullOrEmpty(lockedGroupCode);
+
+            callSound = Attributes["callSound"].AsObject(new AssetLocation("sounds/instrument/elkcall"));
 
             capi = api as ICoreClientAPI;
 
@@ -122,7 +125,7 @@ namespace Jaunt.Items
 
 
                 slot.Itemstack.Attributes.SetLong("lastPlayerMs", ela);
-                api.World.PlaySoundAt(new AssetLocation("sounds/instrument/elkcall"), byEntity, (byEntity as EntityPlayer)?.Player, 0.75f, 32, 0.5f);
+                api.World.PlaySoundAt(callSound, byEntity, (byEntity as EntityPlayer)?.Player, 0.75f, 32, 0.5f);
 
                 if (api.Side == EnumAppSide.Server)
                 {
