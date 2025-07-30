@@ -29,17 +29,17 @@
 		},
 		"handbook": {
 			"groupcode": "creaturegroup-wildhorse-{type}"
-		}		
+		}
 	},
 	"behaviorConfigs": {
-		"controlledphysics": { 
+		"controlledphysics": {
 			"stepHeight": 3.1251,
 			"stepUpSpeed": 0.2
 		},
 		"floatupwhenstuck": { "onlyWhenDead": true },
 		"rideableaccessories": {
 			"wearableSlots": [
-				{ "code": "head-ferus", "forCategoryCodes": ["bridle", "unicornbridle"], "attachmentPointCode": "HeadAP","stepParentTo": { "": { "elementName": "Head" } } }, 
+				{ "code": "head-ferus", "forCategoryCodes": ["bridle", "unicornbridle"], "attachmentPointCode": "HeadAP","stepParentTo": { "": { "elementName": "Head" } } },
 				{ "code": "middleback-ferus", "forCategoryCodes": ["saddle", "unicornsaddle"], "attachmentPointCode": "MidAP","stepParentTo": { "": { "elementName": "MidStorage" } } },
 				{ "code": "middlebackunder-ferus", "forCategoryCodes": ["blanket"], "attachmentPointCode": "MidUnderAP", "stepParentTo": { "": { "elementName": "MidUnderStorage" } } },
 				{ "code": "lowerbackside-ferus", "forCategoryCodes": ["sidebags"], "attachmentPointCode": "RearSideAP", "stepParentTo": { "": { "elementName": "RearSideStorage" } } },
@@ -59,14 +59,14 @@
 						"*-ferus": 0.013
 					},
 					"backwards": true,
-					"turnRadius": 3.5,
+					"yawMultiplier": 1,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
 					"iconTexture": "jaunt:hud/walkback.svg"
 				},
 				{
 					"code": "idle",
-					"turnRadius": 4,
+					"yawMultiplier": 1.5,
 					"iconTexture": "jaunt:hud/idle.svg"
 				},
 				{
@@ -74,7 +74,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.013
 					},
-					"turnRadius": 3.5,
+					"yawMultiplier": 1,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot",
 					"iconTexture": "jaunt:hud/walk.svg"
@@ -84,7 +84,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.036
 					},
-					"turnRadius": 3,
+					"yawMultiplier": 0.75,
 					"staminaCost": 0.0,
 					"fallbackGaitCode": "walk",
 					"sound": "game:creature/hooved/trot",
@@ -95,7 +95,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.08475
 					},
-					"turnRadius": 2,
+					"yawMultiplier": 0.65,
 					"staminaCost": 0.0,
 					"fallbackGaitCode": "trot",
 					"sound": "game:creature/hooved/trot",
@@ -106,7 +106,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.16
 					},
-					"turnRadius": 1.5,
+					"yawMultiplier": 0.5,
 					"staminaCost": 0.2,
 					"fallbackGaitCode": "canter",
 					"sound": "game:creature/hooved/gallop",
@@ -117,7 +117,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.013
 					},
-					"turnRadius": 3.5,
+					"yawMultiplier": 1,
 					"staminaCost": 0.0,
 					"sound": "game:creature/hooved/trot"
 				},
@@ -126,7 +126,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.02
 					},
-					"turnRadius": 3.5
+					"yawMultiplier": 1
 				},
 				{
 					"code": "swimback",
@@ -134,7 +134,7 @@
 					"movespeedByType": {
 						"*-ferus": 0.015
 					},
-					"turnRadius": 3.5
+					"yawMultiplier": 1
 				}
 			]
 		},
@@ -144,7 +144,7 @@
 				{ "apName": "Rider", "selectionBox": "MidAP", "bodyYawLimit": 0.2, "controllable": true,
 					"mountOffsetByType": { "*adult-*-ferus": { "x":-0.1,"y":-0.4,"z":0},
 					"*": { "x":0,"y":-0.5,"z":0} } }
-			],			
+			],
 			"rideableGaitOrder": ["walkback", "idle", "walk", "trot", "canter", "gallop"],
 			"controls": {
 				"idle": {
@@ -154,7 +154,7 @@
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -184,7 +184,7 @@
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -214,7 +214,7 @@
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -247,7 +247,7 @@
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -280,7 +280,7 @@
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -315,7 +315,7 @@
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -382,7 +382,7 @@
 						"animationSpeed": 2,
 						"weight": 1,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 80,
 							"UpperTorso": 80,
@@ -414,7 +414,7 @@
 						"animationSpeed": 1,
 						"weight": 10,
 						"withFpVariant": true,
-						"blendMode": "Average", 
+						"blendMode": "Average",
 						"elementWeight": {
 							"LowerTorso": 160,
 							"UpperTorso": 160,
@@ -465,7 +465,7 @@
 			"*-baby-*-ferus": { "base": "entity/land/ferus/baby"}
 		},
 		"textureByType": {
-			"*-ferus": { "base": "entity/ferus/mealy-baydun", "overlays": [ ], "alternates": [ 
+			"*-ferus": { "base": "entity/ferus/mealy-baydun", "overlays": [ ], "alternates": [
 				{ "base": "entity/ferus/grullo"},
 				{ "base": "entity/ferus/mealy-reddun"},
 				{ "base": "entity/ferus/bay"},
@@ -595,7 +595,7 @@
 						"code": "game:redmeat-raw",
 						"quantityByType": {
 							"*-adult-female-ferus": { "avg": 12,"var": 1.5},"*-adult-male-ferus": { "avg": 15,"var": 1.5},"*-baby-*-ferus": { "avg": 6,"var": 1.5}
-							
+
 						}
 					},
 					{

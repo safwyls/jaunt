@@ -17,15 +17,15 @@
 		"*-adult-*-autumnus": 1.5, "*-baby-*-autumnus": 0.7, "*-juvenile-*-autumnus": 1.2, "*-adolescent-*-autumnus": 1.3
 	},
 	"attributes": {
-		"tamedByType": { "*": true },
+		"tamedByType": { "*": false},
 		"killedByInfoText": "deadcreature-killed",
 		"basketCatchable": true,
 		"trapChanceByType": {"*-baby-*":0.7, "*-juvenile-*":0.3, "*": 0.0 },
 		"trapDestroyChanceByType": { "*-baby-*": 0.55, "*-juvenile-*": 0.75, "*": 0.0 },
 		"minGenerationToAllowHealing": 0,
 		"creatureDiet": {
-			"foodCategories": ["Fruit", "Grain", "Vegetable"],
-			"foodTags": ["fruitmash", "grass", "nibblecrop", "sweetBerryBush"]
+			"foodCategories": ["Protein"],
+			"foodTags": ["meat","fish","fishfillet","jerky","fisheggs","crabmeat","psfish","cod","shreddedchicken"]
 		},
 		"handbook": {
 			"groupcode": "creaturegroup-wyvern-{type}"
@@ -55,29 +55,129 @@
 			"idleGait": "idle",
 			"idleFlyingGait": "hover",
 			"idleSwimmingGait": "swim",
+			"flyingGaitDrag": 0.25,
+			"swimmingGaitDrag": 0.05,
+			"groundGaitDrag": 0,
 			"gaits": [
-				{ "code": "walkback", "turnRadius": 0.2857, "staminaCost": 0.0, "sound": "game:creature/hooved/trot", "iconTexture": "hud/walkback.svg", "movespeedByType": { "*-autumnus": -0.017 } },
-				{ "code": "idle", "turnRadius": 0.25, "iconTexture": "hud/idle.svg" },
-				{ "code": "walk", "turnRadius": 0.2857, "staminaCost": 0.0, "sound": "game:creature/hooved/trot", "iconTexture": "hud/walk.svg", "movespeedByType": { "*-autumnus": 0.017 } },
-				{ "code": "sprint", "turnRadius": 0.67, "staminaCost": 0.2, "fallbackGaitCode": "walk", "sound": "game:creature/hooved/gallop", "movespeedByType": { "*-autumnus": 0.16 } },
+				{
+					"code": "walkback",
+					"environment": "land",
+					"yawMultiplier": 1,
+					"backwards": true,
+					"staminaCost": 0.0,
+					"iconTexture": "hud/walkback.svg",
+					"movespeedByType": { "*-autumnus": 0.017 }
+				},
+				{
+					"code": "idle",
+					"environment": "land",
+					"yawMultiplier": 1.25,
+					"iconTexture": "hud/idle.svg"
+				},
+				{
+					"code": "walk",
+					"environment": "land",
+					"yawMultiplier": 1,
+					"staminaCost": 0.0,
+					"iconTexture": "hud/walk.svg",
+					"movespeedByType": { "*-autumnus": 0.017 }
+				},
+				{
+					"code": "sprint",
+					"environment": "land",
+					"yawMultiplier": 0.5,
+					"staminaCost": 0.2,
+					"fallbackGaitCode": "walk",
+					"sound": "draconis:sounds/stomp",
+					"movespeedByType": { "*-autumnus": 0.16 }
+				},
 
-				{ "code": "flyback", "turnRadius": 1, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": -0.025 } },
-				{ "code": "hover", "turnRadius": 0.5, "staminaCost": 0.0 },
-				{ "code": "glide", "turnRadius": 2, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.08 } },
-				{ "code": "glideflap", "turnRadius": 3, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.10 } },
-				{ "code": "fly", "turnRadius": 4, "staminaCost": 0.0, "movespeedByType": { "*-autumnus": 0.12 } },
+				{
+					"code": "flyback",
+					"environment": "air",
+					"yawMultiplier": 1,
+					"backwards": true,
+					"staminaCost": 0.0,
+					"movespeedByType": { "*-autumnus": 0.015 },
+					"sound": "draconis:sounds/flying"
+				},
+				{
+					"code": "hover",
+					"environment": "air",
+					"yawMultiplier": 1.25,
+					"staminaCost": 0.0,
+					"sound": "draconis:sounds/flying"
+				},
+				{
+					"code": "glide",
+					"environment": "air",
+					"yawMultiplier": 0.75,
+					"ascendSpeed": 1,
+					"descendSpeed": 6,
+					"staminaCost": 0.0,
+					"movespeedByType": { "*-autumnus": 0.04 },
+					"sound": "draconis:sounds/glide"
+				},
+				{
+					"code": "glideflap",
+					"environment": "air",
+					"yawMultiplier": 0.5,
+					"ascendSpeed": 2,
+					"descendSpeed": 5,
+					"staminaCost": 0.1,
+					"fallbackGaitCode": "glide",
+					"movespeedByType": { "*-autumnus": 0.065 },
+					"sound": "draconis:sounds/glide"
+				},
+				{
+					"code": "fly",
+					"environment": "air",
+					"yawMultiplier": 0.25,
+					"ascendSpeed": 4,
+					"descendSpeed": 5,
+					"staminaCost": 0.2,
+					"fallbackGaitCode": "glideflap",
+					"movespeedByType": { "*-autumnus": 0.08 },
+					"sound": "draconis:sounds/flying"
+				},
+				{
+					"code": "dive",
+					"environment": "air",
+					"descendSpeed": 10,
+					"staminaCost": 0.0,
+					"fallbackGaitCode": "hover",
+					"movespeedByType": { "*-autmnus": 0.025 },
+					"sound": "draconis:sounds/glide"
+				},
 
-				{ "code": "jump", "turnRadius": 0.2857, "staminaCost": 0.0, "sound": "game:creature/hooved/trot", "movespeedByType": { "*-autumnus": 0.16 } },
+				{
+					"code": "jump",
+					"environment": "land",
+					"yawMultiplier": 1,
+					"staminaCost": 0.0,
+					"movespeedByType": { "*-autumnus": 0.16 }
+				},
 
-				{ "code": "swimback", "turnRadius": 0.2857, "movespeedByType": { "*-autumnus": -0.012 } },
-				{ "code": "swim", "turnRadius": 0.2857, "movespeedByType": { "*-autumnus": 0.012 } }
+				{
+					"code": "swimback",
+					"environment": "sea",
+					"yawMultiplier": 1,
+					"backwards": true,
+					"movespeedByType": { "*-autumnus": 0.012 }
+				},
+				{
+					"code": "swim",
+					"environment": "sea",
+					"yawMultiplier": 1,
+					"movespeedByType": { "*-autumnus": 0.012 }
+				}
 			]
 		},
 		"jaunt:rideable": {
-			"interactMountAnySeat": true,
+			"interactMountAnySeat": false,
 			"seats": [
 				{ "apName": "Rider", "selectionBox": "MidAP", "bodyYawLimit": 0.2, "controllable": true,
-					"mountOffsetByType": { "*-female-autumnus": { "x":-0.1, "y":-0.4, "z":0}, "*-male-autumnus": { "x":0, "y":-0.4, "z":0},
+					"mountOffsetByType": { "*-female-autumnus": { "x":-0.1, "y":-0.4, "z":0}, "*-male-autumnus": { "x":-0.17, "y":-0.57, "z":0},
 						"*": { "x":0, "y":-0.4, "z":0} } }
 			],
 			"rideableGaitOrder": ["walkback", "idle", "walk", "sprint"],
@@ -85,17 +185,16 @@
 			"controls": {
 				"walkback": {
 					"movespeedmultiplier": 1,
-					"animation": "Walk",
+					"animation": "WalkBack",
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 1.2,
-						"*": 1.2
+						"*-autumnus": 1.2
 					},
 					"easeInSpeed": 1,
 					"easeOutSpeed": 3,
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-rideground",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -121,7 +220,7 @@
 				"idle": {
 					"weight": 1,
 					"riderAnim": {
-						"animation": "rideelk-idle",
+						"animation": "ridewyvern-rideground",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -149,12 +248,11 @@
 					"animation": "Walk",
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 1.125,
-						"*": 1.125
+						"*-autumnus": 1.125
 					},
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-rideground",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -183,12 +281,11 @@
 					"easeOutSpeed": 4,
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 3,
-						"*": 3
+						"*-autumnus": 3
 					},
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-rideground",
 						"animationSpeed": 2,
 						"weight": 1,
 						"withFpVariant": true,
@@ -214,17 +311,16 @@
 
 				"flyback": {
 					"movespeedmultiplier": 1,
-					"animation": "Hover",
+					"animation": "Hoverback",
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 1.2,
-						"*": 1.2
+						"*-autumnus": 1.2
 					},
 					"easeInSpeed": 1,
 					"easeOutSpeed": 3,
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-hover",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -251,7 +347,7 @@
 					"weight": 1,
 					"animation": "Hover",
 					"riderAnim": {
-						"animation": "rideelk-idle",
+						"animation": "ridewyvern-hover",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -280,12 +376,11 @@
 					"easeOutSpeed": 4,
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 3,
-						"*": 3
+						"*-autumnus": 2
 					},
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-ride",
 						"animationSpeed": 2,
 						"weight": 1,
 						"withFpVariant": true,
@@ -314,12 +409,11 @@
 					"easeOutSpeed": 4,
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 3,
-						"*": 3
+						"*-autumnus": 2
 					},
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-ride",
 						"animationSpeed": 2,
 						"weight": 1,
 						"withFpVariant": true,
@@ -347,12 +441,11 @@
 					"animation": "Fly",
 					"weight": 10,
 					"animationSpeedByType": {
-						"*-autumnus": 1.125,
-						"*": 1.125
+						"*-autumnus": 1.125
 					},
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-ride",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -385,7 +478,7 @@
 					"easeOutSpeed": 40,
 					"easeInSpeed": 40,
 					"riderAnim": {
-						"animation": "rideelk-jump",
+						"animation": "ridewyvern-ride",
 						"animationSpeed": 1,
 						"weight": 10,
 						"withFpVariant": true,
@@ -416,7 +509,7 @@
 					"weight": 10,
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-ride",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -446,7 +539,7 @@
 					"weight": 10,
 					"blendMode": "Average",
 					"riderAnim": {
-						"animation": "rideelk-walk",
+						"animation": "ridewyvern-ride",
 						"animationSpeed": 1,
 						"weight": 1,
 						"withFpVariant": true,
@@ -471,34 +564,50 @@
 				}
 			}
 		},
+		"jaunt:stamina": {
+			"maxStamina": 300,
+			"sprintFatigue": 0.2,
+			"swimFatigue": 0.2,
+			"baseFatigueRate": 1,
+			"exhaustionThreshold": 0.5,
+			"staminaRegenRate": 1,
+			"regenPenaltyWounded": 0.5,
+			"regenPenaltyMounted": 0.3
+		},
 		"health": {
 			"currenthealthByType": {
-				"*-adult-female-autumnus": 32, "*-adult-male-autumnus": 34, "*-baby-*-autumnus": 15, "*-juvenile-*-autumnus": 20, "*-adolescent-*-autumnus": 25
+				"*-adult-female-autumnus": 120, "*-adult-male-autumnus": 116, "*-baby-*-autumnus": 16, "*-juvenile-*-autumnus": 32, "*-adolescent-*-autumnus": 66
 			},
 			"maxhealthByType": {
-				"*-adult-female-autumnus": 32, "*-adult-male-autumnus": 34, "*-baby-*-autumnus": 15, "*-juvenile-*-autumnus": 20, "*-adolescent-*-autumnus": 25
+				"*-adult-female-autumnus": 120, "*-adult-male-autumnus": 116, "*-baby-*-autumnus": 16, "*-juvenile-*-autumnus": 32, "*-adolescent-*-autumnus": 66
 			}
 		},
 		"ownable": {
 			"groupCode": "wyvern"
-		},
-		"drops": []
+		}
 	},
+	"drops": [],
 	"client": {
 		"renderer": "Shape",
 		"shapeByType": {
-			"*-adult-male-autumnus": { "base": "entity/land/autumnus/wyvern", "overlays": [ { "base": "entity/land/autumnus/horns-v1" }]},
-			"*-adult-female-autumnus": { "base": "entity/land/autumnus/wyvern", "overlays": [ { "base": "entity/land/autumnus/horns-v2" }]},
-			"*-baby-*-autumnus": { "base": "entity/land/autumnus/wyvern"},
-			"*-juvenile-*-autumnus": { "base": "entity/land/autumnus/wyvern"},
-			"*-adolescent-*-autumnus": { "base": "entity/land/autumnus/wyvern", "overlays": [ { "base": "entity/land/autumnus/horns-v2" }]}
+			"*-adult-male-autumnus": { "base": "entity/autumnus/wyvern", "overlays": [ { "base": "entity/autumnus/horns-v1" }]},
+			"*-adult-female-autumnus": { "base": "entity/autumnus/wyvern", "overlays": [ { "base": "entity/autumnus/horns-v2" }]},
+			"*-baby-*-autumnus": { "base": "entity/autumnus/wyvern"},
+			"*-juvenile-*-autumnus": { "base": "entity/autumnus/wyvern"},
+			"*-adolescent-*-autumnus": { "base": "entity/autumnus/wyvern", "overlays": [ { "base": "entity/autumnus/horns-v2" }]}
 		},
-		"textureByType": {
-			"*-adult-*-autumnus":{ "base": "entity/autumnus/sugarmaple"},
-			"*-baby-*-autumnus": { "base": "entity/autumnus/bud"},
-			"*-juvenile-*-autumnus": { "base": "entity/autumnus/rathian"},
-			"*-adolescent-*-autumnus": { "base": "entity/autumnus/solar"}
-		},
+		"texturesByType": {
+			"*-adult-*-autumnus":{
+				"skin": {"base":"entity/autumnus/sugarmaple", "alternates": [{"base":"entity/autumnus/silvermaple"},{"base":"entity/autumnus/redmaple"}]},
+				"horn": {"base":"game:item/tool/material/iron"}
+			},
+			"*-adolescent-*-autumnus":{
+				"skin": {"base":"entity/autumnus/solar"},
+				"horn": {"base":"game:item/tool/material/iron"}
+			},
+			"*-juvenile-*-autumnus": { "skin": {"base": "entity/autumnus/rathian"}},
+			"*-baby-*-autumnus": {"skin":{"base": "entity/autumnus/bud"}
+			}},
 		"sizeByType": {
 			"*-adult-female-autumnus": 1, "*-adult-male-autumnus": 0.9, "*-baby-*-autumnus": 0.2, "*-juvenile-*-autumnus": 0.4, "*-adolescent-*-autumnus": 0.6
 		},
@@ -510,16 +619,16 @@
 			{ "code": "health" },
 			{ "code": "harvestable", "quantitySlots": 8},
 			{ "code": "multiply", "enabledByType": { "*-adult-female-*": true, "*": false } },
-			{ "code": "ownable", "enabledByType": { "*-baby-*": false, "*": true}},
-			{ "code": "selectionboxes", "enabledByType": { "*-baby-*": false, "*-adult-*": true, "*": false}},
-			{ "code": "rideableaccessories", "enabledByType": { "*-baby-*": false, "*-adult-*": true, "*": false }},
+			{ "code": "ownable", "enabledByType": {"*": true}},
+			{ "code": "selectionboxes", "enabledByType": {"*-adult-*": true, "*": false}},
+			{ "code": "rideableaccessories", "enabledByType": {"*-adult-*": true, "*": false }},
 			{ "code": "jaunt:gait" },
-			{ "code": "jaunt:rideable", "enabledByType": { "*-baby-*": false, "*-adult-*": true, "*": false}},
+			{ "code": "jaunt:rideable", "enabledByType": {"*-adult-*": true, "*": false}},
+			{ "code": "jaunt:stamina" },
 			{ "code": "ropetieable" }
 		],
 		"animations": [
 			{ "code": "attack", "animation": "attack", "animationSpeed": 1.2, "weight": 10, "blendMode": "AddAverage" },
-			{ "code": "charge", "animation": "charge", "easeInSpeed": 10, "easeOutSpeed": 2, "animationSpeed": 1, "weight": 10, "blendMode": "Average" },
 			{ "code": "dead", "animation": "dead", "weight": 10, "blendMode": "Average" },
 			{ "code": "die", "animation": "die", "animationSpeed": 0.75, "weight": 10, "blendMode": "Average", "triggeredBy": { "onControls": [ "dead" ] }},
 			{ "code": "eat", "animation": "eat", "easeOutSpeed": 10, "blendMode": "Average" },
@@ -530,17 +639,147 @@
 			{ "code": "jump", "animation": "hover", "animationSpeed": 1.4, "weight": 100, "blendMode": "Average", "easeOutSpeed": 40 },
 			{ "code": "sit", "animation": "sit", "easeInSpeed": 4, "easeOutSpeed": 4, "blendMode": "Average" },
 			{ "code": "sleep", "animation": "sleep", "easeInSpeed": 4, "easeOutSpeed": 4, "weight": 5, "blendMode": "Average" },
+			{ "code": "bask", "animation": "bask", "easeInSpeed": 4, "easeOutSpeed": 4,"supressDefaultAnimation": true, "weight": 5, "blendMode": "Average" },
+			{ "code": "greet", "animation": "greet", "easeInSpeed": 4, "easeOutSpeed": 4,"supressDefaultAnimation": true, "weight": 5, "blendMode": "Average" },
 			{ "code": "swim", "animation": "swim", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "run", "animation": "run", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
-			{ "code": "turn-left", "animation": "turn-left", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 0.01, "blendMode": "Average", "elementWeight": { "Head Origin": 80, "Chest": 80, "Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80, "Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
-			{ "code": "turn-right", "animation": "turn-right", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 0.01, "blendMode": "Average", "elementWeight": { "Head Origin": 80, "Chest": 80, "Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80, "Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
-			{ "code": "fly-turn-left", "animation": "fly-turn-left", "easeInSpeed": 3, "weight": 10, "easeOutSpeed": 10, "blendMode": "Average", "elementWeight": { "Head Origin": 5, "Chest": 5, "Neck1": 5, "Neck2": 5, "Neck3": 5, "Neck4": 5, "Neck5": 5, "Tail":5, "Tail2":5, "Tail3":5, "Tail4":5, "Tail5":5, "Tail6":5, "Tail7":5, "Tail8":5, "Tail9":5}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
-			{ "code": "fly-turn-right", "animation": "fly-turn-right", "easeInSpeed": 3, "weight": 10, "easeOutSpeed": 10, "blendMode": "Average", "elementWeight": { "Head Origin": 5, "Chest": 5, "Neck1": 5, "Neck2": 5, "Neck3": 5, "Neck4": 5, "Neck5": 5, "Tail":5, "Tail2":5, "Tail3":5, "Tail4":5, "Tail5":5, "Tail6":5, "Tail7":5, "Tail8":5, "Tail9":5}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
+			{ "code": "turn-left", "animation": "turn-left-low", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 0.01, "blendMode": "Average", "elementWeight": { "Head Origin": 80, "Chest": 80, "Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80, "Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
+			{ "code": "turn-right", "animation": "turn-right-low", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 0.01, "blendMode": "Average", "elementWeight": { "Head Origin": 80, "Chest": 80, "Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80, "Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80}, "elementBlendMode": { "Head Origin": "AddAverage", "Chest": "AddAverage", "Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage", "Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage" }},
+			{ "code": "fly-turn-left", "animation": "fly-turn-left", "easeInSpeed": 3, "weight": 10, "easeOutSpeed": 10, "blendMode": "Average",
+				"elementWeight": {
+					"Head Origin": 80,
+					"WingOrigin": 0.1,
+					"LShoulder": 0.1, "LArm": 0.1, "Lforearm": 0.1,
+					"Lfingie": 0.1, "Lfingie2": 0.1, "Lfingie3": 0.1, "Lfingie4": 0.1,
+					"Lfingiewing": 0.1, "Lfingiewing2": 0.1, "Lfingiewing3": 0.1, "Lfingiewing4": 0.1, "Lfingiewing5": 0.1, "Lfingiewing6": 0.1,
+					"Lforearmwing": 0.1, "Lforearmwing2": 0.1, "LArmwing": 0.1,
+					"RShoulder": 0.1, "RArm": 0.1, "Rforearm": 0.1,
+					"Rfingie": 0.1, "Rfingie2": 0.1, "Rfingie3": 0.1, "Rfingie4": 0.1,
+					"Rfingiewing": 0.1, "Rfingiewing2": 0.1, "Rfingiewing3": 0.1, "Rfingiewing4": 0.1, "Rfingiewing5": 0.1, "Rfingiewing6": 0.1,
+					"Rforearmwing": 0.1, "Rforearmwing2": 0.1, "RArmwing": 0.1,
+					"Chest": 80,
+					"Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80,
+					"Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80
+				},
+				"elementBlendMode": {
+					"Head Origin": "AddAverage",
+					"WingOrigin": "AddAverage",
+					"LShoulder": "AddAverage", "LArm": "AddAverage", "Lforearm": "AddAverage",
+					"Lfingie": "AddAverage", "Lfingie2": "AddAverage", "Lfingie3": "AddAverage", "Lfingie4": "AddAverage",
+					"Lfingiewing": "AddAverage", "Lfingiewing2": "AddAverage", "Lfingiewing3": "AddAverage", "Lfingiewing4": "AddAverage", "Lfingiewing5": "AddAverage", "Lfingiewing6": "AddAverage",
+					"Lforearmwing": "AddAverage", "Lforearmwing2": "AddAverage", "LArmwing": "AddAverage",
+					"RShoulder": "AddAverage", "RArm": "AddAverage", "Rforearm": "AddAverage",
+					"Rfingie": "AddAverage", "Rfingie2": "AddAverage", "Rfingie3": "AddAverage", "Rfingie4": "AddAverage",
+					"Rfingiewing": "AddAverage", "Rfingiewing2": "AddAverage", "Rfingiewing3": "AddAverage", "Rfingiewing4": "AddAverage", "Rfingiewing5": "AddAverage", "Rfingiewing6": "AddAverage",
+					"Rforearmwing": "AddAverage", "Rforearmwing2": "AddAverage", "RArmwing": "AddAverage",
+					"Chest": "AddAverage",
+					"Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage",
+					"Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage"
+				}
+			},
+			{ "code": "fly-turn-right", "animation": "fly-turn-right", "easeInSpeed": 3, "weight": 10, "easeOutSpeed": 10, "blendMode": "Average",
+				"elementWeight": {
+					"Head Origin": 80,
+					"WingOrigin": 0.1,
+					"LShoulder": 0.1, "LArm": 0.1, "Lforearm": 0.1,
+					"Lfingie": 0.1, "Lfingie2": 0.1, "Lfingie3": 0.1, "Lfingie4": 0.1,
+					"Lfingiewing": 0.1, "Lfingiewing2": 0.1, "Lfingiewing3": 0.1, "Lfingiewing4": 0.1, "Lfingiewing5": 0.1, "Lfingiewing6": 0.1,
+					"Lforearmwing": 0.1, "Lforearmwing2": 0.1, "LArmwing": 0.1,
+					"RShoulder": 0.1, "RArm": 0.1, "Rforearm": 0.1,
+					"Rfingie": 0.1, "Rfingie2": 0.1, "Rfingie3": 0.1, "Rfingie4": 0.1,
+					"Rfingiewing": 0.1, "Rfingiewing2": 0.1, "Rfingiewing3": 0.1, "Rfingiewing4": 0.1, "Rfingiewing5": 0.1, "Rfingiewing6": 0.1,
+					"Rforearmwing": 0.1, "Rforearmwing2": 0.1, "RArmwing": 0.1,
+					"Chest": 80,
+					"Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80,
+					"Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80
+				},
+				"elementBlendMode": {
+					"Head Origin": "AddAverage",
+					"WingOrigin": "AddAverage",
+					"LShoulder": "AddAverage", "LArm": "AddAverage", "Lforearm": "AddAverage",
+					"Lfingie": "AddAverage", "Lfingie2": "AddAverage", "Lfingie3": "AddAverage", "Lfingie4": "AddAverage",
+					"Lfingiewing": "AddAverage", "Lfingiewing2": "AddAverage", "Lfingiewing3": "AddAverage", "Lfingiewing4": "AddAverage", "Lfingiewing5": "AddAverage", "Lfingiewing6": "AddAverage",
+					"Lforearmwing": "AddAverage", "Lforearmwing2": "AddAverage", "LArmwing": "AddAverage",
+					"RShoulder": "AddAverage", "RArm": "AddAverage", "Rforearm": "AddAverage",
+					"Rfingie": "AddAverage", "Rfingie2": "AddAverage", "Rfingie3": "AddAverage", "Rfingie4": "AddAverage",
+					"Rfingiewing": "AddAverage", "Rfingiewing2": "AddAverage", "Rfingiewing3": "AddAverage", "Rfingiewing4": "AddAverage", "Rfingiewing5": "AddAverage", "Rfingiewing6": "AddAverage",
+					"Rforearmwing": "AddAverage", "Rforearmwing2": "AddAverage", "RArmwing": "AddAverage",
+					"Chest": "AddAverage",
+					"Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage",
+					"Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage"
+				}
+			},
+			{ "code": "fly-up", "animation": "fly-up", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 10, "blendMode": "Average",
+				"elementWeight": {
+					"Head Origin": 80,
+					"WingOrigin": 0.1,
+					"LShoulder": 0.1, "LArm": 0.1, "Lforearm": 0.1,
+					"Lfingie": 0.1, "Lfingie2": 0.1, "Lfingie3": 0.1, "Lfingie4": 0.1,
+					"Lfingiewing": 0.1, "Lfingiewing2": 0.1, "Lfingiewing3": 0.1, "Lfingiewing4": 0.1, "Lfingiewing5": 0.1, "Lfingiewing6": 0.1,
+					"Lforearmwing": 0.1, "Lforearmwing2": 0.1, "LArmwing": 0.1,
+					"RShoulder": 0.1, "RArm": 0.1, "Rforearm": 0.1,
+					"Rfingie": 0.1, "Rfingie2": 0.1, "Rfingie3": 0.1, "Rfingie4": 0.1,
+					"Rfingiewing": 0.1, "Rfingiewing2": 0.1, "Rfingiewing3": 0.1, "Rfingiewing4": 0.1, "Rfingiewing5": 0.1, "Rfingiewing6": 0.1,
+					"Rforearmwing": 0.1, "Rforearmwing2": 0.1, "RArmwing": 0.1,
+					"Chest": 80,
+					"Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80,
+					"Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80
+				},
+				"elementBlendMode": {
+					"Head Origin": "AddAverage",
+					"WingOrigin": "AddAverage",
+					"LShoulder": "AddAverage", "LArm": "AddAverage", "Lforearm": "AddAverage",
+					"Lfingie": "AddAverage", "Lfingie2": "AddAverage", "Lfingie3": "AddAverage", "Lfingie4": "AddAverage",
+					"Lfingiewing": "AddAverage", "Lfingiewing2": "AddAverage", "Lfingiewing3": "AddAverage", "Lfingiewing4": "AddAverage", "Lfingiewing5": "AddAverage", "Lfingiewing6": "AddAverage",
+					"Lforearmwing": "AddAverage", "Lforearmwing2": "AddAverage", "LArmwing": "AddAverage",
+					"RShoulder": "AddAverage", "RArm": "AddAverage", "Rforearm": "AddAverage",
+					"Rfingie": "AddAverage", "Rfingie2": "AddAverage", "Rfingie3": "AddAverage", "Rfingie4": "AddAverage",
+					"Rfingiewing": "AddAverage", "Rfingiewing2": "AddAverage", "Rfingiewing3": "AddAverage", "Rfingiewing4": "AddAverage", "Rfingiewing5": "AddAverage", "Rfingiewing6": "AddAverage",
+					"Rforearmwing": "AddAverage", "Rforearmwing2": "AddAverage", "RArmwing": "AddAverage",
+					"Chest": "AddAverage",
+					"Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage",
+					"Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage"
+				}
+			},
+			{ "code": "fly-down", "animation": "fly-down", "easeInSpeed": 3, "easeOutSpeed": 10, "weight": 1, "blendMode": "Average",
+				"elementWeight": {
+					"Head Origin": 80,
+					"WingOrigin": 0.1,
+					"LShoulder": 0.1, "LArm": 0.1, "Lforearm": 0.1,
+					"Lfingie": 0.1, "Lfingie2": 0.1, "Lfingie3": 0.1, "Lfingie4": 0.1,
+					"Lfingiewing": 0.1, "Lfingiewing2": 0.1, "Lfingiewing3": 0.1, "Lfingiewing4": 0.1, "Lfingiewing5": 0.1, "Lfingiewing6": 0.1,
+					"Lforearmwing": 0.1, "Lforearmwing2": 0.1, "LArmwing": 0.1,
+					"RShoulder": 0.1, "RArm": 0.1, "Rforearm": 0.1,
+					"Rfingie": 0.1, "Rfingie2": 0.1, "Rfingie3": 0.1, "Rfingie4": 0.1,
+					"Rfingiewing": 0.1, "Rfingiewing2": 0.1, "Rfingiewing3": 0.1, "Rfingiewing4": 0.1, "Rfingiewing5": 0.1, "Rfingiewing6": 0.1,
+					"Rforearmwing": 0.1, "Rforearmwing2": 0.1, "RArmwing": 0.1,
+					"Chest": 80,
+					"Neck1": 80, "Neck2": 80, "Neck3": 80, "Neck4": 80, "Neck5": 80,
+					"Tail":80, "Tail2":80, "Tail3":80, "Tail4":80, "Tail5":80, "Tail6":80, "Tail7":80, "Tail8":80, "Tail9":80
+				},
+				"elementBlendMode": {
+					"Head Origin": "AddAverage",
+					"WingOrigin": "AddAverage",
+					"LShoulder": "AddAverage", "LArm": "AddAverage", "Lforearm": "AddAverage",
+					"Lfingie": "AddAverage", "Lfingie2": "AddAverage", "Lfingie3": "AddAverage", "Lfingie4": "AddAverage",
+					"Lfingiewing": "AddAverage", "Lfingiewing2": "AddAverage", "Lfingiewing3": "AddAverage", "Lfingiewing4": "AddAverage", "Lfingiewing5": "AddAverage", "Lfingiewing6": "AddAverage",
+					"Lforearmwing": "AddAverage", "Lforearmwing2": "AddAverage", "LArmwing": "AddAverage",
+					"RShoulder": "AddAverage", "RArm": "AddAverage", "Rforearm": "AddAverage",
+					"Rfingie": "AddAverage", "Rfingie2": "AddAverage", "Rfingie3": "AddAverage", "Rfingie4": "AddAverage",
+					"Rfingiewing": "AddAverage", "Rfingiewing2": "AddAverage", "Rfingiewing3": "AddAverage", "Rfingiewing4": "AddAverage", "Rfingiewing5": "AddAverage", "Rfingiewing6": "AddAverage",
+					"Rforearmwing": "AddAverage", "Rforearmwing2": "AddAverage", "RArmwing": "AddAverage",
+					"Chest": "AddAverage",
+					"Neck1": "AddAverage", "Neck2": "AddAverage", "Neck3": "AddAverage", "Neck4": "AddAverage", "Neck5": "AddAverage",
+					"Tail":"AddAverage", "Tail2":"AddAverage", "Tail3":"AddAverage", "Tail4":"AddAverage", "Tail5":"AddAverage", "Tail6":"AddAverage", "Tail7":"AddAverage", "Tail8":"AddAverage", "Tail9":"AddAverage"
+				}
+			},
 			{ "code": "walk", "animation": "walk", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
+			{ "code": "walkback", "animation": "walkback", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "glide", "animation": "glide", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "glideflap", "animation": "glideflap", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
 			{ "code": "fly", "animation": "fly", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
-			{ "code": "hover", "animation": "hover", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" }
+			{ "code": "hover", "animation": "hover", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" },
+			{ "code": "hoverback", "animation": "hoverback", "easeInSpeed": 4, "easeOutSpeed": 4, "supressDefaultAnimation": true, "blendMode": "Average" }
 		]
 	},
 	"server": {
@@ -567,7 +806,9 @@
 				"hoursToDecay": 96,
 				"decayedBlockByType": {
 					"*-adult-*": "carcass-large",
-					"*-baby-*": "carcass-medium"
+					"*-adolescent-*": "carcass-medium",
+					"*-juvenile-*": "carcass-small",
+					"*-baby-*": "carcass-tiny"
 				}
 			},
 			{ "code": "floatupwhenstuck", "onlyWhenDead": true},
@@ -575,10 +816,10 @@
 				"drops": [
 					{
 						"type": "item",
-						"code": "game:redmeat-raw",
+						"code": "game:bushmeat-raw",
 						"quantityByType": {
-							"*-adult-female-autumnus": { "avg": 12, "var": 1.5},
-							"*-adult-male-autumnus": { "avg": 15, "var": 1.5},
+							"*-adult-female-autumnus": { "avg": 15, "var": 1.5},
+							"*-adult-male-autumnus": { "avg": 12, "var": 1.5},
 							"*-baby-*-autumnus": { "avg": 6, "var": 1.5},
 							"*-juvenile-*-autumnus": { "avg": 8, "var": 1.5},
 							"*-adolescent-*-autumnus": { "avg": 10, "var": 1.5}
@@ -626,6 +867,14 @@
 							"*-baby-*": { "avg": 1.0, "var": 0.0},
 							"*": { "avg": 0.0, "var": 0.0}
 						}
+					},
+					{
+						"type": "item",
+						"code": "draconis:creature-wyvern-eggdormant-{type}",
+						"quantityByType": {
+							"*-adult-*": { "avg": 1.0, "var": 0.0},
+							"*": { "avg": 0.0, "var": 0.0}
+						}
 					}
 				]
 			},
@@ -636,19 +885,19 @@
 					"*": false
 				},
 				"spawnEntityCodesByType": {
-					"*-adult-female-*": [ { "code":"draconiswyvern:wyvern-baby-female-{type}" }, { "code": "draconiswyvern:wyvern-baby-male-{type}" } ]},
+					"*-adult-female-*": [ { "code":"draconis:wyvern-egg-{type}" } ]},
 				"requiresNearbyEntityCodeByType": {
-					"*-adult-female-*": "draconiswyvern:wyvern-adult-male-{type}" },
+					"*-adult-female-*": "draconis:wyvern-adult-male-{type}" },
 				"requiresNearbyEntityRange": 10,
 				"spawnQuantityMin": 1,
 				"spawnQuantityMaxByType": { "*": 2},
 				"pregnancyDaysByType": {
-					"*-autumnus": 32
+					"*-autumnus": 108
 				},
 				"multiplyCooldownDaysMinByType": { "*": 6},
 				"multiplyCooldownDaysMaxByType": { "*": 11},
 				"portionsEatenForMultiplyByType": {
-					"*-autumnus": 10
+					"*-autumnus": 20
 				}
 			},
 			{ "code": "grow",
@@ -660,12 +909,12 @@
 				},
 				"hoursToGrowByType": { "*": 168},
 				"adultEntityCodesByType": {
-					"*-baby-male-*": ["draconiswyvern:wyvern-juvenile-male-{type}"],
-					"*-baby-female-*": ["draconiswyvern:wyvern-juvenile-female-{type}"],
-					"*-juvenile-female-*": ["draconiswyvern:wyvern-adolescent-female-{type}"],
-					"*-juvenile-male-*": ["draconiswyvern:wyvern-adolescent-male-{type}"],
-					"*-adolescent-female-*": ["draconiswyvern:wyvern-adult-female-{type}"],
-					"*-adolescent-male-*": ["draconiswyvern:wyvern-adult-male-{type}"]
+					"*-baby-male-*": ["draconis:wyvern-juvenile-male-{type}"],
+					"*-baby-female-*": ["draconis:wyvern-juvenile-female-{type}"],
+					"*-juvenile-female-*": ["draconis:wyvern-adolescent-female-{type}"],
+					"*-juvenile-male-*": ["draconis:wyvern-adolescent-male-{type}"],
+					"*-adolescent-female-*": ["draconis:wyvern-adult-female-{type}"],
+					"*-adolescent-male-*": ["draconis:wyvern-adult-male-{type}"]
 				}
 			},
 			{ "code": "emotionstates",
@@ -713,8 +962,9 @@
 						"enabledByType": {
 							"*-adult-*": true,
 							"*": false},
+						"skipEntityCodes":["player"],
 						"entityCodesByType": {
-							"*-adult-*": ["player", "bear-*", "bell-*", "bowtorn-*", "drifter-*", "hyena-*", "locust-*", "moose-*", "shiver-*", "wolf-*", "caninae-canina-adult-*", "felinae-adult-*", "machairodontinae-adult-*", "pantherinae-neofelis-adult-*", "pantherinae-panthera-adult-*", "thylacoleonidae-adult-*"  ]},
+							"*-adult-*": ["bear-*", "bell-*", "bowtorn-*", "drifter-*", "hyena-*", "locust-*", "moose-*", "shiver-*", "wolf-*", "caninae-canina-adult-*", "felinae-adult-*", "machairodontinae-adult-*", "pantherinae-neofelis-adult-*", "pantherinae-panthera-adult-*", "thylacoleonidae-adult-*"  ]},
 						"priority": 3,
 						"slot": 1,
 						"damageByType": {
@@ -724,8 +974,8 @@
 						"damageTierByType": { "*":3},
 						"mincooldown": 500,
 						"maxcooldown": 1000,
-						"attackDurationMs": 500,
-						"damagePlayerAtMs": 250,
+						"attackDurationMs": 2000,
+						"damagePlayerAtMs": 1200,
 						"animationSpeed": 1,
 						"whenInEmotionState": "aggressiveondamage|aggressivearoundentities"
 					},
@@ -734,8 +984,9 @@
 						"enabledByType": {
 							"*-adult-*": true,
 							"*": false},
+						"skipEntityCodes":["player"],
 						"entityCodesByType": {
-							"*-adult-*": ["player", "bear-*", "bell-*", "bowtorn-*", "drifter-*", "hyena-*", "locust-*", "moose-*", "shiver-*", "wolf-*", "caninae-canina-adult-*", "felinae-adult-*", "machairodontinae-adult-*", "pantherinae-neofelis-adult-*", "pantherinae-panthera-adult-*", "thylacoleonidae-adult-*"  ]},
+							"*-adult-*": ["bear-*", "bell-*", "bowtorn-*", "drifter-*", "hyena-*", "locust-*", "moose-*", "shiver-*", "wolf-*", "caninae-canina-adult-*", "felinae-adult-*", "machairodontinae-adult-*", "pantherinae-neofelis-adult-*", "pantherinae-panthera-adult-*", "thylacoleonidae-adult-*"  ]},
 						"priority": 2.5,
 						"mincooldown": 1000,
 						"maxcooldown": 1500,
@@ -772,14 +1023,14 @@
 						"code": "stayclosetoentity",
 						"animation": "Run",
 						"enabledByType": {
-							"*-adult-male-*": false,
 							"*": true
 						},
 						"priority": 1.81,
 						"entityCodeByType": {
-							"*-baby-*": "wyvern-adult-female-{type}" },
+							"*-baby-*": "player"
+						},
 						"movespeedByType": {
-							"*-adult-*-autumnus": 0.0285, "*-baby-*-autumnus": 0.015
+							"*-baby-*-autumnus": 0.015
 						},
 						"animationSpeedByType": {
 							"*-baby-*": 2.4,
@@ -802,6 +1053,74 @@
 						"stopRange": 20,
 						"stopOnHurt": true,
 						"whenNotInEmotionState": "aggressiveondamage|aggressivearoundentities|fleeondamage"
+					},
+					{
+						"code": "seekentity",
+						"priority": 1.72,
+						"minduration": 1000,
+						"maxduration": 2000,
+						"mincooldown": 10000,
+						"maxcooldown": 40000,
+						"friendlyTarget": true,
+						"entityCodesByType": {
+							"*": ["player"]},
+						"seekingRange": 5,
+						"movespeed": 0.00001,
+						"animation": "Greet",
+						"enabledByType": {"*-adult-*": true,"*": false},
+						"animationSpeed": 1.0,
+						"sound": "sounds/maplewinggrumble"
+					},
+					{
+						"code": "seekentity",
+						"priority": 1.72,
+						"minduration": 1000,
+						"maxduration": 2000,
+						"mincooldown": 10000,
+						"maxcooldown": 40000,
+						"friendlyTarget": true,
+						"entityCodesByType": {
+							"*": ["player"]},
+						"seekingRange": 5,
+						"movespeed": 0.00001,
+						"animation": "Greet",
+						"enabledByType": {"*-adolescent-*": true,"*": false},
+						"animationSpeed": 1.0,
+						"sound": "sounds/maplewinggrumbleadolescent"
+					},
+					{
+						"code": "seekentity",
+						"priority": 1.72,
+						"minduration": 1000,
+						"maxduration": 2000,
+						"mincooldown": 10000,
+						"maxcooldown": 40000,
+						"friendlyTarget": true,
+						"entityCodesByType": {
+							"*": ["player"]},
+						"seekingRange": 5,
+						"movespeed": 0.00001,
+						"animation": "Greet",
+						"enabledByType": {"*-juvenile-*": true,"*": false},
+						"animationSpeed": 1.0,
+						"sound": "sounds/maplewinggrumblejuvi"
+					},
+					{
+						"code": "seekentity",
+						"priority": 1.71,
+						"friendlyTarget": true,
+						"minduration": 1000,
+						"maxduration": 2000,
+						"mincooldown": 10000,
+						"maxcooldown": 40000,
+						"entityCodesByType": {
+							"*-baby-*": ["player"]},
+						"seekingRange": 5,
+						"movespeed": 0.00001,
+						"animation": "Greet",
+						"enabledByType": {"*-baby-*": true, "*": false},
+						"animationSpeed": 1.0,
+						"sound": "sounds/babycall"
 					},
 					{
 						"code": "idle",
@@ -848,14 +1167,32 @@
 						"stopOnHurt": true
 					},
 					{
+						"code": "idle",
+						"animation": "Bask",
+						"priority": 1.6,
+						"minduration": 20000,
+						"maxduration": 80000,
+						"mincooldown": 20000,
+						"maxcooldown": 40000,
+						"whenNotInEmotionState": "aggressiveondamage|aggressivearoundentities|fleeondamage",
+						"duringDayTimeFramesByType": {
+							"*":[{ "fromHour": 7, "toHour": 10}]},
+						"stopOnNearbyEntityCodes": [ "player" ],
+						"stopRange": 1,
+						"stopOnHurt": true
+					},
+					{
 						"code": "seekfoodandeat",
 						"animation": "Walk",
 						"eatAnimation": "Eat",
 						"movespeedByType": {
-							"*-adult-*-autumnus": 0.010, "*-baby-*-autumnus": 0.010
+							"*-adult-female-autumnus": 0.010,
+							"*-adult-male-autumnus":0.009,
+							"*-adolescent-*-autumnus": 0.006,
+							"*-juvenile-*-autumnus": 0.004,
+							"*-baby-*-autumnus": 0.002
 						},
 						"animationSpeedByType": {
-							"*-baby-*": 1.2,
 							"*": 1.2
 						},
 						"priority": 1.34,
@@ -874,11 +1211,13 @@
 						"priorityForCancel": 1.35,
 						"wanderChanceByType": { "*-adult-*":0.1, "*":0.5},
 						"movespeedByType": {
-							"*-adult-*-autumnus": 0.010, "*-baby-*-autumnus": 0.010
-
+							"*-adult-female-autumnus": 0.010,
+							"*-adult-male-autumnus":0.009,
+							"*-adolescent-*-autumnus": 0.006,
+							"*-juvenile-*-autumnus": 0.004,
+							"*-baby-*-autumnus": 0.002
 						},
 						"animationSpeedByType": {
-							"*-baby-*": 1.2,
 							"*": 1.2
 						},
 						"wanderRangeMaxByType": { "*-adult-male-*":50, "*adult-female-*":50, "*-baby-*":20},
@@ -887,10 +1226,11 @@
 				]
 			},
 			{ "code": "pettable" },
-			{ "code": "selectionboxes" },
-			{ "code": "rideableaccessories" },
+			{ "code": "selectionboxes","enabledByType": {"*-adult-*": true, "*": false}},
+			{ "code": "rideableaccessories","enabledByType": {"*-adult-*": true, "*": false}},
 			{ "code": "jaunt:gait" },
-			{ "code": "jaunt:rideable" },
+			{ "code": "jaunt:rideable", "enabledByType": {"*-adult-*": true, "*": false}},
+			{ "code": "jaunt:stamina" },
 			{ "code": "ropetieable" }
 		]
 	}
