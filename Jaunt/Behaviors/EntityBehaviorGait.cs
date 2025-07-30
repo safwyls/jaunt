@@ -98,10 +98,10 @@ namespace Jaunt.Behaviors
 
             // Order of operations matters
             // 1. Get drag factors
-            FlyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * attributes["flyingGaitDrag"].AsFloat();
-            SwimmingDragFactor = 1 - (1 - GlobalConstants.WaterDrag) * attributes["swimmingGaitDrag"].AsFloat();
+            FlyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * attributes["flyingGaitDrag"].AsFloat(1f);
+            SwimmingDragFactor = 1 - (1 - GlobalConstants.WaterDrag) * attributes["swimmingGaitDrag"].AsFloat(1f);
             // 0.3f comes from vanilla ground drag code
-            GroundDragFactor = 1 - 0.3f * attributes["groundGaitDrag"].AsFloat();
+            GroundDragFactor = 1 - 0.3f * attributes["groundGaitDrag"].AsFloat(1f);
 
             // 2. Build gait list
             var gaitarray = attributes["gaits"].AsArray<GaitMeta>();
@@ -113,7 +113,7 @@ namespace Jaunt.Behaviors
 
                 // First check for gait specific drag factors
                 // If missing apply environment drag factors
-                // If those aren't set they default to 0 (max drag)
+                // If those aren't set they default to 1f (max drag)
                 switch (gait.Environment)
                 {
                     case EnumHabitat.Air:
