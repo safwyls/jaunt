@@ -1,53 +1,70 @@
-﻿using Cairo;
-using Jaunt.Hud;
-using Jaunt.Systems;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Jaunt.Systems;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
-using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
     public record GaitMeta
     {
         public string Code { get; set; } // Unique identifier for the gait, ideally matched with rideable controls
-        public float TurnRadius { get; set; } = 3.5f;
+        public EnumHabitat Environment { get; set; }
+        public double? DragFactor { get; set; } = null;
+        public float YawMultiplier { get; set; } = 1f;
         public float MoveSpeed { get; set; } = 0f;
         public bool Backwards { get; set; } = false;
+        public bool CanAscend { get; set; } = true;
+        public bool CanDescend { get; set; } = true;
+        public float AscendSpeed { get; set; } = 0f;
+        public float DescendSpeed { get; set; } = 0f;
         public float StaminaCost { get; set; } = 0f;
         public string FallbackGaitCode { get; set; } // Gait to slow down to such as when fatiguing
         public AssetLocation Sound { get; set; }
         public AssetLocation IconTexture { get; set; }
+        public AnimationMetaData Anim { get; set; }
     }
 
     public class EntityBehaviorGait : EntityBehavior
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
+
+        private static string AttributeKey => $"{ModSystem.ModId}:gait";
         public override string PropertyName()
         {
-            return $"{ModSystem.ModId}:gait";
+            return AttributeKey;
         }
+
         public readonly FastSmallDictionary<string, GaitMeta> Gaits = new(1);
+        private ITreeAttribute gaitTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
         public GaitMeta CurrentGait
         {
             get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
-            set => entity.WatchedAttributes.SetString("currentgait", value.Code);
+            set
+            {
+                entity.WatchedAttributes.SetString("currentgait", value.Code);
+                MarkDirty();
+            }
         }
 
+        public EnumHabitat CurrentEnv => CurrentGait.Environment;
+
+        public bool EnableDamageHandler = false;
         public GaitMeta IdleGait;
+        public GaitMeta IdleFlyingGait;
+        public GaitMeta IdleSwimmingGait;
+        public double FlyingDragFactor;
+        public double SwimmingDragFactor;
+        public double GroundDragFactor;
         public GaitMeta FallbackGait => CurrentGait.FallbackGaitCode is null ? IdleGait : Gaits[CurrentGait.FallbackGaitCode];
         public GaitMeta CascadingFallbackGait(int n)
         {
             var result = CurrentGait;
-            
+
             while (n > 0)
             {
                 if (result.FallbackGaitCode is null) return IdleGait;
@@ -59,9 +76,11 @@ namespace Jaunt.Behaviors
         }
 
         float timeSinceLastGaitFatigue = 0f;
+        EntityAgent eagent => entity as EntityAgent;
         protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
+        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
         public EntityBehaviorGait(Entity entity) : base(entity)
@@ -77,35 +96,94 @@ namespace Jaunt.Behaviors
             api = entity.Api;
             capi = api as ICoreClientAPI;
 
-            GaitMeta[] gaitarray = attributes["gaits"].AsArray<GaitMeta>();
-            foreach (GaitMeta gait in gaitarray)
+            // Order of operations matters
+            // 1. Get drag factors
+            FlyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * attributes["flyingGaitDrag"].AsFloat(1f);
+            SwimmingDragFactor = 1 - (1 - GlobalConstants.WaterDrag) * attributes["swimmingGaitDrag"].AsFloat(1f);
+            // 0.3f comes from vanilla ground drag code
+            GroundDragFactor = 1 - 0.3f * attributes["groundGaitDrag"].AsFloat(1f);
+
+            // 2. Build gait list
+            var gaitarray = attributes["gaits"].AsArray<GaitMeta>();
+            foreach (var gait in gaitarray)
             {
                 Gaits[gait.Code] = gait;
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
                 gait.Sound?.WithPathPrefixOnce("sounds/");
-                
+
+                // First check for gait specific drag factors
+                // If missing apply environment drag factors
+                // If those aren't set they default to 1f (max drag)
+                switch (gait.Environment)
+                {
+                    case EnumHabitat.Air:
+                        gait.DragFactor ??= FlyingDragFactor;
+                        break;
+                    case EnumHabitat.Sea:
+                    case EnumHabitat.Underwater:
+                        gait.DragFactor ??= SwimmingDragFactor;
+                        break;
+                    case EnumHabitat.Land:
+                    default:
+                        gait.DragFactor ??= GroundDragFactor;
+                        break;
+                }
+
                 if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
-            
+
+            // 3. Set idle gaits
             string idleGaitCode = attributes["idleGait"].AsString("idle");
+            string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
+            string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
+            EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
             IdleGait = Gaits[idleGaitCode];
-            CurrentGait = IdleGait; // Set initial gait to Idle
+            IdleFlyingGait = Gaits[idleFlyingGaitCode];
+            IdleSwimmingGait = Gaits[idleSwimmingGaitCode];
+
+            // 4. Initialize gait tree
+            var gaitTree = entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
+
+            if (gaitTree == null)
+            {
+                entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
+
+                // These only get set on new initializations, not on reloads
+                CurrentGait = Gaits[attributes["currentgait"].AsString(idleGaitCode)];
+                MarkDirty();
+            }
+
+            CurrentGait = CurrentEnv switch
+            {
+                EnumHabitat.Land => IdleGait,
+                EnumHabitat.Air => IdleFlyingGait,
+                EnumHabitat.Sea => IdleSwimmingGait,
+                EnumHabitat.Underwater => IdleSwimmingGait,
+                _ => IdleGait
+            };
+
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
         {
             base.AfterInitialized(onFirstSpawn);
-
             ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
         }
 
-        public float GetTurnRadius() => CurrentGait?.TurnRadius ?? 3.5f; // Default turn radius if not set
+        public bool IsIdle => eagent.Controls.IsFlying
+            ? CurrentGait == IdleFlyingGait
+            : eagent.Swimming && IdleSwimmingGait != null
+                ? CurrentGait == IdleSwimmingGait
+                : CurrentGait == IdleGait;
 
-        public void SetIdle() => CurrentGait = IdleGait;
-        public bool IsIdle => CurrentGait == IdleGait;
-        public bool IsBackward => CurrentGait.Backwards;
+        public bool IsBackward => CurrentGait.Backwards || CurrentGait.MoveSpeed < 0f;
         public bool IsForward => !CurrentGait.Backwards && CurrentGait != IdleGait;
 
+        public void SetIdle(bool forceGround)
+        {
+            CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingGait : IdleGait;
+            if (forceGround) eagent.Controls.IsFlying = false;
+        }
         public void ApplyGaitFatigue(float dt)
         {
             if (api.Side != EnumAppSide.Server || ebs == null) return;
@@ -116,10 +194,10 @@ namespace Jaunt.Behaviors
             {
                 if (CurrentGait.StaminaCost > 0 && !entity.Swimming)
                 {
-                    ebs.FatigueEntity(CurrentGait.StaminaCost, new()
+                    ebs.FatigueEntity(CurrentGait.StaminaCost, new FatigueSource
                     {
                         Source = EnumFatigueSource.Mounted,
-                        SourceEntity = (entity as EntityAgent).MountedOn?.Passenger ?? entity
+                        SourceEntity = (entity as EntityAgent)?.MountedOn?.Passenger ?? entity
                     });
                 }
             }
@@ -130,6 +208,11 @@ namespace Jaunt.Behaviors
             base.OnGameTick(dt);
 
             ApplyGaitFatigue(dt);
+        }
+
+        public void MarkDirty()
+        {
+            entity.WatchedAttributes.MarkPathDirty(AttributeKey);
         }
     }
 }

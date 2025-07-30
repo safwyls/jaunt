@@ -1,0 +1,51 @@
+{
+	code: "instrument",
+	class: "jaunt:iteminstrument",
+	behaviors: [
+		{ name: "GroundStorable", properties: { layout: 'Quadrants', collisionBox: { x1: 0, y1: 0, z1: 0, x2: 1, y2: 0.125, z2: 1 } } }
+	],
+	attributes: {
+		"callSound": "game:sounds/instrument/elkcall",
+		"shelvable": true,
+		"onshelfTransform": {
+			"rotation": { x: 0, y: 50, z: 0 }
+		},
+		"groundStorageTransform": {
+			"translation": { x: 0, y: 0.015, z: 0 },
+			"rotation": { x: 0, y: 33, z: 0 }
+		},
+	},
+	"variantgroups": [
+		{ "code": "type", "states": ["flute1"] }
+	],
+	"maxstacksize": 16,
+	heldTpUseAnimation: "flutecall",
+	heldRightReadyAnimation: "fluteready",
+	"shape": { "base": "game:item/tool/instrument/{type}" },
+	"creativeinventory": { "general": ["*"], "items": ["*"] },
+	materialDensity: 2000,
+	guiTransform: {
+		translation: { x: 0, y: 0, z: 0 },
+		rotation: { x: -48, y: 134, z: 171 },
+		origin: { x: 0.53, y: 0.2, z: 0.4 },
+		scale: 2.8
+	},
+	fpHandTransform: {
+		translation: { x: 0.28, y: 0.2, z: 0 },
+		rotation: { x: 86, y: 180, z: -88 },
+		origin: { x: 0.5, y: 0, z: 0.5 },
+		scale: 2.15
+	},
+	groundTransform: {
+		translation: { x: 0, y: 0, z: 0 },
+		rotation: { x: 0, y: 0, z: 0 },
+		origin: { x: 0.5, y: -0, z: 0.5 },
+		scale: 4
+	},
+	tpHandTransform: {
+		translation: { x: -0.9, y: -0.05, z: -0.78 },
+		rotation: { x: 85, y: 0, z: 2 },
+		origin: { x: 0.5, y: 0, z: 0.5 },
+		scale: 0.68
+	}
+}

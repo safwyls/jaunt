@@ -3,12 +3,15 @@ using Jaunt.Config;
 using Jaunt.Hud;
 using Jaunt.Systems;
 using System;
+using Jaunt.Entities;
+using Jaunt.Items;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Server;
 using Vintagestory.Client.NoObf;
+using Vintagestory.GameContent;
 
 namespace Jaunt
 {
@@ -21,8 +24,8 @@ namespace Jaunt
 
         public string ModId => Mod.Info.ModID;
         public ILogger Logger => Mod.Logger;
-        public ICoreAPI Api { get; private set; }
-        public ICoreClientAPI ClientApi { get; private set; }
+        public ICoreAPI api { get; private set; }
+        public ICoreClientAPI capi { get; private set; }
         public JauntConfig Config { get; private set; }
         public static JauntModSystem Instance { get; private set; }
 
@@ -32,13 +35,15 @@ namespace Jaunt
         public override void Start(ICoreAPI api)
         {
             Instance = this;
-            Api = api;
+            this.api = api;
 
+            api.RegisterItemClass(ModId + ":iteminstrument", typeof(ItemJauntInstrument));
+            api.RegisterEntity(ModId + ":entityflyingagent", typeof(EntityFlyingAgent));
             api.RegisterEntityBehaviorClass(ModId + ":gait", typeof(EntityBehaviorGait));
             api.RegisterEntityBehaviorClass(ModId + ":rideable", typeof(EntityBehaviorJauntRideable));
             api.RegisterEntityBehaviorClass(ModId + ":stamina", typeof(EntityBehaviorJauntStamina));
 
-            ReloadConfig(api);
+            ReloadConfig();
         }
 
         public override void StartServerSide(ICoreServerAPI api)
@@ -48,7 +53,7 @@ namespace Jaunt
 
         public override void StartClientSide(ICoreClientAPI api)
         {
-            ClientApi = api;
+            capi = api;
 
             if (Config.EnableStamina)
             {
@@ -68,17 +73,17 @@ namespace Jaunt
 
             if (vanillaHudStatbar != null && vanillaHudStatbar.IsOpened())
             {
-                _staminaHud = new HudElementStaminaBar(ClientApi);
-                ClientApi.Event.RegisterGameTickListener(_staminaHud.OnGameTick, 1000);
-                ClientApi.Gui.RegisterDialog(_staminaHud);
+                _staminaHud = new HudElementStaminaBar(capi);
+                capi.Event.RegisterGameTickListener(_staminaHud.OnGameTick, 1000);
+                capi.Gui.RegisterDialog(_staminaHud);
 
-                ClientApi.Event.UnregisterGameTickListener(customHudListenerId);
+                capi.Event.UnregisterGameTickListener(customHudListenerId);
             }
         }
 
         private HudStatbar GetVanillaStatbarHud()
         {
-            foreach (var hud in ClientApi.Gui.OpenedGuis)
+            foreach (var hud in capi.Gui.OpenedGuis)
             {
                 if (hud is HudStatbar statbar)
                 {
@@ -108,7 +113,7 @@ namespace Jaunt
             return fatigue;
         }
 
-        public void ReloadConfig(ICoreAPI api)
+        public void ReloadConfig()
         {
             try
             {
@@ -129,7 +134,7 @@ namespace Jaunt
                     config.ConfigVersion = "0.0.0";
                     api.StoreModConfig(config, $"{ModId}.json");
                 }
-                
+
                 // If config version is outdated run migration
                 if (GameVersion.IsNewerVersionThan(Mod.Info.Version, config.ConfigVersion))
                 {
@@ -137,7 +142,7 @@ namespace Jaunt
                     config = MigrateConfig(config, config.ConfigVersion, Mod.Info.Version);
                     api.StoreModConfig(config, $"{ModId}.json");
                 }
-                
+
                 Config = config;
             }
             catch (Exception ex)
@@ -146,7 +151,7 @@ namespace Jaunt
                 Logger.Error(ex);
             }
         }
-        
+
         public static JauntConfig MigrateConfig(JauntConfig config, string oldVersion, string newVersion)
         {
             // Only run this check for mod configs created before our config versioning system (1.1.7)
