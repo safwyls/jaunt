@@ -4,7 +4,7 @@
     {
         // Config
         public string ConfigVersion { get; set; }
-        
+
         // Global Stamina Settings (these apply to all mods using Jaunt)
         public float GlobalMaxStaminaMultiplier { get; set; } = 1f;
         public float GlobalStaminaRegenMultiplier { get; set; } = 1f;
@@ -15,7 +15,7 @@
 
         // Stamina
         public bool EnableStamina { get; set; } = true;
-        
+
         // Hud
         public bool HideStaminaOnFull { get; set; } = false;
         public string StaminaBarLocation { get; set; } = "AboveHealth";
@@ -23,9 +23,9 @@
         public float StaminaBarXOffset { get; set; } = 0f;
         public float StaminaBarYOffset { get; set; } = 0f;
         public bool ShowGaitIcon { get; set; } = true;
-        public float IconOffsetX { get; set; } = -400f;
-        public float IconOffsetY { get; set; } = -99f;
-        public float IconSize { get; set; } = 42f;
+        public float IconOffsetX { get; set; } = -385f;
+        public float IconOffsetY { get; set; } = -105f;
+        public float IconSize { get; set; } = 75f;
 
         // Default values for stamina settings
         public float DefaultMaxStamina { get; set; } = 100f;

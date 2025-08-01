@@ -161,6 +161,14 @@ namespace Jaunt
                 config.GlobalDebugMode = false;
             }
 
+            // Migrate icon placement for new icon sizes in 2.0.0
+            if (GameVersion.IsNewerVersionThan("2.0.0-rc.6", oldVersion))
+            {
+                config.IconOffsetX = -385f;
+                config.IconOffsetY = -105f;
+                config.IconSize = 75f;
+            }
+
             config.ConfigVersion = newVersion;
             return config;
         }
