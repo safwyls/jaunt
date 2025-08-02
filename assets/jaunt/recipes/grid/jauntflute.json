@@ -1,0 +1,36 @@
+[
+    {
+        "ingredientPattern": "KCL",
+        "ingredients": {
+            "K": { "type": "item", "code": "game:knife-*", "isTool": true  },
+            "C": { "type": "item", "code": "game:powder-charcoal", "quantity": 3 },
+            "L": { "type": "item", "code": "game:bone", "quantity": 1 }
+        },
+        "shapeless": true,
+        "width": 1,
+        "height": 3,
+        "output": { "type": "item", "code": "jaunt:instrument-flute", "quantity": 1  }
+    },
+    {
+        "ingredientPattern": "FC",
+        "ingredients": {
+            "F": { "type": "item", "code": "game:instrument-flute1", "quantity": 1  },
+            "C": { "type": "item", "code": "game:powder-charcoal", "quantity": 3  }
+        },
+        "shapeless": true,
+        "width": 1,
+        "height": 2,
+        "output": { "type": "item", "code": "jaunt:instrument-flute", "quantity": 1  }
+    },
+    {
+        "ingredientPattern": "JK",
+        "ingredients": {
+            "J": { "type": "item", "code": "jaunt:instrument-flute" },
+            "K": { "type": "item", "code": "game:knife-*", "isTool": true  }
+        },
+        "shapeless": true,
+        "width": 1,
+        "height": 2,
+        "output": { "type": "item", "code": "game:instrument-flute1", "quantity": 1  }
+    }
+]
