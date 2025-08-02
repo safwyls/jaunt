@@ -183,7 +183,7 @@ namespace Jaunt.Items
 
         private void callEntity(ItemSlot slot, EntityAgent byEntity)
         {
-            var groupCode = slot.Itemstack.Attributes.GetString("groupCode", "mountableanimal");
+            var groupCode = slot.Itemstack.Attributes.GetString("groupCode", "");
             var plr = (byEntity as EntityPlayer).Player;
             var mseo = api.ModLoader.GetModSystem<ModSystemEntityOwnership>();
             if (!mseo.OwnerShipsByPlayerUid.TryGetValue(plr.PlayerUID, out var ownerships) || ownerships == null || !ownerships.TryGetValue(groupCode, out var ownership))
