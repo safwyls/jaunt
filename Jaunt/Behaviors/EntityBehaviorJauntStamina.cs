@@ -21,7 +21,7 @@ namespace Jaunt.Behaviors
     /// <param name="ftgSource"></param>
     /// <returns></returns>
     public delegate float OnFatiguedDelegate(float fatigue, FatigueSource ftgSource);
-        
+
     public class EntityBehaviorJauntStamina : EntityBehavior
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
@@ -31,7 +31,7 @@ namespace Jaunt.Behaviors
         protected float timeSinceLastUpdate;
         protected float timeSinceLastLog;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
-        
+
         ITreeAttribute StaminaTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
 
         private static string AttributeKey => $"{ModSystem.ModId}:stamina";
@@ -121,8 +121,8 @@ namespace Jaunt.Behaviors
         public FatigueSource SprintFatigueSource;
         public FatigueSource SwimFatigueSource;
 
-        public EntityBehaviorJauntStamina(Entity entity) : base(entity) 
-        { 
+        public EntityBehaviorJauntStamina(Entity entity) : base(entity)
+        {
         }
 
         public override void Initialize(EntityProperties properties, JsonObject attributes)
@@ -191,7 +191,7 @@ namespace Jaunt.Behaviors
             timeSinceLastLog += dt;
 
             if (timeSinceLastLog > 1f && DebugMode)
-            {                
+            {
                 // Do some logging every second
 
                 timeSinceLastLog = 0f;
@@ -227,7 +227,7 @@ namespace Jaunt.Behaviors
                     }
                 }
 
-                Exhausted = Stamina / MaxStamina <= ExhaustionThreshold; // Entity is exhausted when stamina reaches 0
+                Exhausted = Stamina / MaxStamina <= ExhaustionThreshold;
                 MarkDirty();
 
                 timeSinceLastUpdate = 0;
@@ -290,7 +290,7 @@ namespace Jaunt.Behaviors
         public void OnEntityFatigued(FatigueSource fatigueSource, ref float fatigue)
         {
             // Only fatigue server side and sync to client
-            if (entity.World.Side == EnumAppSide.Client) return;         
+            if (entity.World.Side == EnumAppSide.Client) return;
 
             if (OnFatigued != null)
             {

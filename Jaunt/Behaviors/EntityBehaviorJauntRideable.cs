@@ -30,6 +30,17 @@ namespace Jaunt.Behaviors
         public bool CanFly => FlyableGaitOrder?.Count > 0;
         public double VerticalSpeed;
 
+        public double LastDismountTotalHours {
+            get
+            {
+                return entity.WatchedAttributes.GetDouble("lastDismountTotalHours");
+            }
+            set
+            {
+                entity.WatchedAttributes.SetDouble("lastDismountTotalHours", value);
+            }
+        }
+
         #endregion Public
 
         #region Internal
@@ -63,7 +74,7 @@ namespace Jaunt.Behaviors
         protected string[] GaitOrderCodes; // List of gait codes in order of increasing speed for the rideable entity
 
         protected EntityBehaviorJauntStamina ebs;
-        protected EntityBehaviorGait ebg;
+        protected EntityBehaviorJauntGait ebg;
         protected EntityBehaviorHealth ebh;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
         protected static string AttributeKey => $"{ModSystem.ModId}:rideable";
@@ -113,7 +124,7 @@ namespace Jaunt.Behaviors
             base.AfterInitialized(onFirstSpawn);
 
             ebs = eagent.GetBehavior<EntityBehaviorJauntStamina>();
-            ebg = eagent.GetBehavior<EntityBehaviorGait>();
+            ebg = eagent.GetBehavior<EntityBehaviorJauntGait>();
             ebh = eagent.GetBehavior<EntityBehaviorHealth>();
 
             // Gaits are required for rideable entities
@@ -193,7 +204,7 @@ namespace Jaunt.Behaviors
         // Stop mounts from wandering off if mounted in last 24 hours (in game time)
         private bool TaskManager_OnShouldExecuteTask(IAiTask task)
         {
-            if (task is AiTaskWander && api.World.Calendar.TotalHours - lastDismountTotalHours < 24) return false;
+            if (task is AiTaskWander && api.World.Calendar.TotalHours - LastDismountTotalHours < 24) return false;
 
             return Seats.All(seat => seat.Passenger == null);
         }
@@ -531,10 +542,10 @@ namespace Jaunt.Behaviors
             if (capi.IsGamePaused) return;
 
 
-            UpdateAngleAndMotion(dt);
+            updateAngleAndMotion(dt);
         }
 
-        protected void UpdateAngleAndMotion(float dt)
+        protected override void updateAngleAndMotion(float dt)
         {
             // Ignore lag spikes
             dt = Math.Min(0.5f, dt);
@@ -549,12 +560,10 @@ namespace Jaunt.Behaviors
 
             ForwardSpeed = Math.Sign(motion.X);
 
-            float yawMultiplier = ebg?.CurrentGait.YawMultiplier ?? 3.5f;
-
-            AngularVelocity = motion.Y * yawMultiplier;
+            AngularVelocity = ebg.CurrentGait.YawMultiplier * motion.Y * 1.5;
 
             entity.SidedPos.Yaw += (float)motion.Y * dt * 30f;
-            entity.SidedPos.Yaw %= GameMath.TWOPI;
+            entity.SidedPos.Yaw = entity.SidedPos.Yaw % GameMath.TWOPI;
 
             if (entity.World.ElapsedMilliseconds - lastJumpMs < 2000 && entity.World.ElapsedMilliseconds - lastJumpMs > 200 && entity.OnGround)
             {
@@ -637,9 +646,8 @@ namespace Jaunt.Behaviors
             if (nowTurnAnim != curTurnAnim)
             {
                 if (curTurnAnim != null) eagent.StopAnimation(curTurnAnim);
-                var anim = (ForwardSpeed == 0 ? "idle-" : "") + nowTurnAnim;
-                curTurnAnim = anim;
-                eagent.StartAnimation(anim);
+
+                eagent.StartAnimation((ForwardSpeed == 0 ? "idle-" : "") + (curTurnAnim = nowTurnAnim));
             }
 
             if (nowClimbAnim != curClimbAnim)
@@ -842,7 +850,7 @@ namespace Jaunt.Behaviors
         {
             Stop();
 
-            lastDismountTotalHours = entity.World.Calendar.TotalHours;
+            LastDismountTotalHours = entity.World.Calendar.TotalHours;
             foreach (var meta in Controls.Values)
             {
                 if (meta.RiderAnim?.Animation != null)
@@ -954,7 +962,7 @@ namespace Jaunt.Behaviors
                 timeSinceLastLog = 0f;
             }
 
-            if (api.Side == EnumAppSide.Server) UpdateAngleAndMotion(dt);
+            if (api.Side == EnumAppSide.Server) updateAngleAndMotion(dt);
 
             StaminaGaitCheck(dt);
 
