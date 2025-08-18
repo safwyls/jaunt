@@ -22,7 +22,7 @@ namespace Jaunt.Hud
         private long listenerId;
         public double RenderOrder => 1;
         public int RenderRange => 0;
-        public HudIconRenderer(ICoreClientAPI api) 
+        public HudIconRenderer(ICoreClientAPI api)
         {
             capi = api;
             api.Event.RegisterRenderer(this, EnumRenderStage.Ortho);
@@ -56,7 +56,7 @@ namespace Jaunt.Hud
             LoadedTexture texture = capi.Gui.LoadSvg(loc, size, size, size, size, ColorUtil.WhiteArgb);
             if (texture is null) return;
 
-            texturesDict.Add(loc, texture);            
+            texturesDict.Add(loc, texture);
         }
 
         private bool CanRender()
@@ -81,7 +81,7 @@ namespace Jaunt.Hud
         {
             EntityPlayer player = capi.World.Player.Entity;
 
-            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorGait>() is EntityBehaviorGait ebg && ebg.CurrentGait.IconTexture is not null)
+            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorJauntGait>() is EntityBehaviorJauntGait ebg && ebg.CurrentGait.IconTexture is not null)
             {
                 activeTexture = texturesDict.TryGetValue(ebg.CurrentGait.IconTexture, out LoadedTexture value) ? value : texturesDict["empty"];
             }

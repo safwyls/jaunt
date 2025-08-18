@@ -7,6 +7,7 @@ using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
@@ -29,7 +30,7 @@ namespace Jaunt.Behaviors
         public AnimationMetaData Anim { get; set; }
     }
 
-    public class EntityBehaviorGait : EntityBehavior
+    public class EntityBehaviorJauntGait : EntityBehaviorGait
     {
         public static JauntModSystem ModSystem => JauntModSystem.Instance;
 
@@ -83,7 +84,7 @@ namespace Jaunt.Behaviors
         protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
-        public EntityBehaviorGait(Entity entity) : base(entity)
+        public EntityBehaviorJauntGait(Entity entity) : base(entity)
         {
         }
 

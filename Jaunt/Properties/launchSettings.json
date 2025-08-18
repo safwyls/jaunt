@@ -3,8 +3,8 @@
     "Client": {
       "commandName": "Executable",
       "executablePath": "dotnet",
-      "commandLineArgs": "\"$(VINTAGE_STORY)/Vintagestory.dll\" --tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\"",
-      "workingDirectory": "$(VINTAGE_STORY)"
+      "commandLineArgs": "\"$(VINTAGE_STORY_PRE)/Vintagestory.dll\" --tracelog --addModPath \"$(ProjectDir)/bin/$(Configuration)/Mods\" --dataPath \"$(APPDATA)/VintagestoryDataPre\"",
+      "workingDirectory": "$(VINTAGE_STORY_PRE)"
     },
     "Server": {
       "commandName": "Executable",
