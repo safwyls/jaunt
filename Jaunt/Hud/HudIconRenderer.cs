@@ -81,9 +81,9 @@ namespace Jaunt.Hud
         {
             EntityPlayer player = capi.World.Player.Entity;
 
-            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorJauntGait>() is EntityBehaviorJauntGait ebg && ebg.CurrentGait.IconTexture is not null)
+            if (player.MountedOn?.MountSupplier?.OnEntity?.GetBehavior<EntityBehaviorJauntGait>() is EntityBehaviorJauntGait ebg && ebg.CurrentJauntGait.IconTexture is not null)
             {
-                activeTexture = texturesDict.TryGetValue(ebg.CurrentGait.IconTexture, out LoadedTexture value) ? value : texturesDict["empty"];
+                activeTexture = texturesDict.TryGetValue(ebg.CurrentJauntGait.IconTexture, out LoadedTexture value) ? value : texturesDict["empty"];
             }
             else
             {
