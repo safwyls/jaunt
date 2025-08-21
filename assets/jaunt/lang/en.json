@@ -15,13 +15,8 @@
   "instrument-skill-play": "Play Instrument",
 
   "groupcode-unbound": "Unbound",
-  "groupcode-ferus": "Wild Horses",
-  "groupcode-wyvern": "Wyverns",
-  "groupcode-mountableanimal": "Elk",
 
-  "instrument-descprepend-unbound": "Not bound to any particular entity group",
-  "instrument-descprepend-ferus": "Can be used to call wild horses",
-  "instrument-descprepend-wyvern": "Can be used to call wyverns",
-  "instrument-descprepend-mountableanimal": "Can be used to call elk",
+  "instrument-descappend-unbound": "Not bound to any particular entity group",
+  "instrument-descappend-bound": "Can be used to call {0}",
   "item-instrument-flute": "Jaunt Flute"
 }
