@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Jaunt.Behaviors;
@@ -80,6 +81,7 @@ namespace Jaunt.Items
         /// <returns></returns>
         public override string GetHeldItemName(ItemStack itemStack)
         {
+            TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
             if (Code == null) return "Invalid block, id " + this.Id;
 
             // If the item is locked to an entity group in the item json, set the group code to the entity group
@@ -90,10 +92,17 @@ namespace Jaunt.Items
             string type = ItemClass.Name();
             StringBuilder sb = new StringBuilder();
             sb.Append(Lang.GetMatching(Code?.Domain + AssetLocation.LocationSeparator + type + "-" + Code?.Path));
+            string displayCode;
             if (string.IsNullOrEmpty(groupCode))
-                sb.Append(" (" + Lang.Get($"jaunt:groupcode-unbound").ToLower() + ")");
+            {
+                displayCode = Lang.Get($"jaunt:groupcode-unbound");
+            }
             else
-                sb.Append(" (" + Lang.Get($"jaunt:groupcode-{groupCode}").ToLower() + ")");
+            {
+                displayCode = textInfo.ToTitleCase(groupCode);
+            }
+
+            sb.Append(" (" + displayCode + ")");
 
             foreach (var bh in CollectibleBehaviors)
             {
@@ -106,9 +115,16 @@ namespace Jaunt.Items
         public override void GetHeldItemInfo(ItemSlot inSlot, StringBuilder dsc, IWorldAccessor world, bool withDebugInfo)
         {
             var groupCode = inSlot.Itemstack.Attributes.GetString("groupCode");
-            if (string.IsNullOrEmpty(groupCode)) groupCode = "unbound";
             base.GetHeldItemInfo(inSlot, dsc, world, withDebugInfo);
-            dsc.AppendLine("\n" + Lang.Get($"jaunt:instrument-descprepend-{groupCode}"));
+            if (string.IsNullOrEmpty(groupCode))
+            {
+                groupCode = Lang.Get($"jaunt:groupcode-unbound").ToLower();
+                dsc.AppendLine("\n" + Lang.Get($"jaunt:instrument-descappend-unbound"));
+            }
+            else
+            {
+                dsc.AppendLine("\n" + Lang.Get($"jaunt:instrument-descappend-bound", groupCode));
+            }
         }
 
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling)
@@ -175,9 +191,11 @@ namespace Jaunt.Items
 
         public bool SetBoundEntityType(ItemSlot slot, Entity entity)
         {
+            TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
             var groupCode = entity.GetBehavior<EntityBehaviorOwnable>()?.Group;
-
             if (string.IsNullOrEmpty(groupCode)) return false;
+
+            var displayCode = textInfo.ToTitleCase(groupCode);
 
             if (disallowedBindings.Contains(groupCode))
             {
@@ -187,7 +205,7 @@ namespace Jaunt.Items
 
             slot.Itemstack.Attributes.SetString("groupCode", groupCode);
 
-            capi?.TriggerIngameDiscovery(this, "bound-groupcode", Lang.Get("jaunt:discovery-bound-entity", Lang.Get($"{entity.Code.Domain}:groupcode-{groupCode}")));
+            capi?.TriggerIngameDiscovery(this, "bound-groupcode", Lang.Get("jaunt:discovery-bound-entity", displayCode));
             return true;
         }
 
