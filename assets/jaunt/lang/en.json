@@ -4,6 +4,7 @@
 
   "ingame-error-too-wild": "This animal is too wild to ride",
   "ingame-error-no-entitysel": "No entity selected",
+  "ingame-error-disallowed-entity": "Cannot bind {0} to the flute, perhaps they respond to a different instrument?",
   "discovery-bound-entity": "Flute bound to mountable group: {0}",
 
   "infotext-stamina-state": "Stamina: {0:0.##}/{1:0.##}",

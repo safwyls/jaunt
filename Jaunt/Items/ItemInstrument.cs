@@ -20,6 +20,7 @@ namespace Jaunt.Items
         private ICoreClientAPI capi;
         private bool isLocked;
         private string lockedGroupCode;
+        private string[] disallowedBindings;
         private AssetLocation callSound;
         public override void OnLoaded(ICoreAPI api)
         {
@@ -27,6 +28,8 @@ namespace Jaunt.Items
 
             lockedGroupCode = Attributes["groupCode"].AsString();
             isLocked = !string.IsNullOrEmpty(lockedGroupCode);
+
+            disallowedBindings = Attributes["disallowedBindings"].AsObject<string[]>(new string[0]);
 
             var soundLoc = Attributes["callSound"].AsString() ?? "game:sounds/instrument/elkcall";
             callSound = new AssetLocation(soundLoc).WithPathPrefixOnce("sounds/");
@@ -140,10 +143,10 @@ namespace Jaunt.Items
                     capi.TriggerIngameError(this, "no-entity-selected", Lang.Get("jaunt:ingame-error-no-entitysel"));
                     return;
                 }
-                SetBoundEntityType(slot, entitySel.Entity);
+                bool bound = SetBoundEntityType(slot, entitySel.Entity);
 
                 //Automatically toggle to play mode after binding to prevent accidental rebinding
-                slot.Itemstack.Attributes.SetInt("toolMode", 0);
+                if (bound) slot.Itemstack.Attributes.SetInt("toolMode", 0);
             }
 
             handling = EnumHandHandling.PreventDefault;
@@ -170,15 +173,22 @@ namespace Jaunt.Items
             itemStack.Attributes.SetString("groupCode", groupCode);
         }
 
-        public void SetBoundEntityType(ItemSlot slot, Entity entity)
+        public bool SetBoundEntityType(ItemSlot slot, Entity entity)
         {
             var groupCode = entity.GetBehavior<EntityBehaviorOwnable>()?.Group;
 
-            if (string.IsNullOrEmpty(groupCode)) return;
+            if (string.IsNullOrEmpty(groupCode)) return false;
+
+            if (disallowedBindings.Contains(groupCode))
+            {
+                capi?.TriggerIngameError(this, "disallowed-entity", Lang.Get($"jaunt:ingame-error-disallowed-entity", groupCode));
+                return false;
+            }
 
             slot.Itemstack.Attributes.SetString("groupCode", groupCode);
 
-            capi?.TriggerIngameDiscovery(this, "bound-groupcode", Lang.Get("jaunt:discovery-bound-entity", Lang.Get($"jaunt:groupcode-{groupCode}")));
+            capi?.TriggerIngameDiscovery(this, "bound-groupcode", Lang.Get("jaunt:discovery-bound-entity", Lang.Get($"{entity.Code.Domain}:groupcode-{groupCode}")));
+            return true;
         }
 
         private void callEntity(ItemSlot slot, EntityAgent byEntity)
