@@ -13,7 +13,8 @@
         "groundStorageTransform": {
             "translation": { "x": 0, "y": 0.015, "z": 0 },
             "rotation": { "x": 0, "y": 33, "z": 0 }
-        }
+        },
+        "disallowedBindings": [ "ferus" ]
     },
     "variantgroups": [
         { "code": "type", "states": ["flute"] }
