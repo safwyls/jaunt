@@ -910,6 +910,7 @@ namespace Jaunt.Behaviors
 
         public new void Stop()
         {
+            gaitSound?.Stop();
             ebg.SetIdle(false);
             eagent.Controls.StopAllMovement();
             eagent.Controls.WalkVector.Set(0, 0, 0);
