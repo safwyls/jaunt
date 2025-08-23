@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -233,7 +234,12 @@ namespace Jaunt.Items
 
             var tm = entity.GetBehavior<EntityBehaviorTaskAI>().TaskManager;
             var aitcto = tm.AllTasks.FirstOrDefault(t => t is AiTaskComeToOwner) as AiTaskComeToOwner;
-            if (entity.ServerPos.DistanceTo(byEntity.ServerPos) > aitcto.TeleportMaxRange) // Do nothing outside max teleport range
+
+            var distToPlayer = entity.ServerPos.DistanceTo(byEntity.ServerPos);
+            var damageByDist = (int)Math.Ceiling(distToPlayer / 20);
+            slot.Itemstack.Collectible.DamageItem(api.World, byEntity, slot, Math.Max(1, damageByDist));
+
+            if (distToPlayer > aitcto.TeleportMaxRange) // Do nothing outside max teleport range
             {
                 return;
             }
