@@ -57,6 +57,9 @@ namespace Jaunt.Behaviors
         internal JauntControlMeta curControlMeta = null;
         internal EnumControlScheme scheme;
         internal bool wasSwimming = false;
+        internal long jumpTimer = 0;
+        internal long groundedTimer = 0;
+        
 
         #endregion Internal
 
@@ -359,6 +362,7 @@ namespace Jaunt.Behaviors
             eagent.Controls.IsFlying = false;
             eagent.Controls.Down = eagent.Controls.Up = false;
             SetNextGait(true, EnumHabitat.Land);
+            groundedTimer = entity.World.ElapsedMilliseconds;
         }
 
         public void GroundToAir()
@@ -366,6 +370,7 @@ namespace Jaunt.Behaviors
             if (!CanFly) return;
             eagent.Controls.IsFlying = true;
             SetNextGait(true, EnumHabitat.Air);
+            groundedTimer = 0;
         }
 
         public override Vec2d SeatsToMotion(float dt)
@@ -445,20 +450,26 @@ namespace Jaunt.Behaviors
 
                 #region Jump Control
 
-                bool jumpPressed = controls.Jump && !prevJumpKey;
+                bool jumpPressed = controls.Jump;
 
                 // 500ms timer on subsequent jumps eliminates buggy transitions when spamming jump
                 switch (jumpPressed)
                 {
-                    case true when entity.Properties.Habitat == EnumHabitat.Air:
+                    case true when entity.Properties.Habitat == EnumHabitat.Air && entity.World.ElapsedMilliseconds - jumpTimer > 350 && jumpTimer != 0:
                         GroundToAir();
                         break;
-                    case true when entity.World.ElapsedMilliseconds - lastJumpMs > 500 && entity.Alive && (entity.OnGround || coyoteTimer > 0):
+                    case true when entity.Alive && (entity.OnGround || coyoteTimer > 0):
                         lastJumpMs = entity.World.ElapsedMilliseconds;
                         jumpNow = true;
                         break;
-                    case true when !entity.OnGround:
+                    case true when !entity.OnGround && entity.World.ElapsedMilliseconds - jumpTimer > 350 && jumpTimer != 0:
                         GroundToAir();
+                        break;
+                    case true when !entity.OnGround && jumpTimer == 0:
+                        jumpTimer = entity.World.ElapsedMilliseconds;
+                        break;
+                    case false:
+                        jumpTimer = 0;
                         break;
                 }
 
@@ -973,6 +984,7 @@ namespace Jaunt.Behaviors
         {
             UpdateControlScheme();
             mountedTotalMs = api.World.ElapsedMilliseconds;
+            groundedTimer = api.World.ElapsedMilliseconds;
             ebg?.SetIdle(entityAgent.OnGround);
         }
 
