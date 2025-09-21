@@ -81,10 +81,13 @@ namespace Jaunt.Behaviors
                 if (!((EntityAgent)Entity).Controls.IsFlying)
                 {
                     var ebr = Entity.GetBehavior<EntityBehaviorJauntRideable>();
-                    if (Entity.World.ElapsedMilliseconds - ebr.groundedTimer > 500)
+                    if (ebr != null)
                     {
-                        (Passenger as EntityAgent)?.TryUnmount();
-                        controls.StopAllMovement();
+                        if (Entity.World.ElapsedMilliseconds - ebr.groundedTimer > 500)
+                        {
+                            (Passenger as EntityAgent)?.TryUnmount();
+                            controls.StopAllMovement();
+                        }
                     }
                 }
             }

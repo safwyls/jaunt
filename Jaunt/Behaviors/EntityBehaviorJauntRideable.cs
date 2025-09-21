@@ -46,7 +46,7 @@ namespace Jaunt.Behaviors
         #region Internal
 
         internal int minGeneration = 0; // Minimum generation for the animal to be rideable
-        internal bool prevForwardKey, prevBackwardKey, prevSprintKey, prevJumpKey;
+        internal bool prevForwardKey, prevBackwardKey, prevSprintKey;
         internal float notOnGroundAccum;
         internal string prevSoundCode;
         internal bool shouldMove = false;
@@ -450,10 +450,10 @@ namespace Jaunt.Behaviors
 
                 #region Jump Control
 
-                bool jumpPressed = controls.Jump;
+                bool nowJump = controls.Jump;
 
-                // 500ms timer on subsequent jumps eliminates buggy transitions when spamming jump
-                switch (jumpPressed)
+                // 350ms timer for holding jump to initiate transition
+                switch (nowJump)
                 {
                     case true when entity.Properties.Habitat == EnumHabitat.Air && entity.World.ElapsedMilliseconds - jumpTimer > 350 && jumpTimer != 0:
                         GroundToAir();
@@ -472,8 +472,6 @@ namespace Jaunt.Behaviors
                         jumpTimer = 0;
                         break;
                 }
-
-                prevJumpKey = controls.Jump;
 
                 #endregion Jump Control
 
