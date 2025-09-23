@@ -1,0 +1,7 @@
+{
+  "dotnet.defaultSolution": "jaunt.sln",
+  "files.associations": {
+    "server-*.txt": "log",
+    "client-*.txt": "log"
+  }
+}
