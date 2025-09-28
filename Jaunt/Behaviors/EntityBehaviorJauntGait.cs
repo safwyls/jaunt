@@ -50,7 +50,6 @@ namespace Jaunt.Behaviors
 
         float timeSinceLastGaitFatigue = 0f;
         EntityAgent eagent => entity as EntityAgent;
-        protected ICoreAPI api;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
         protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
@@ -66,7 +65,6 @@ namespace Jaunt.Behaviors
 
             if (DebugMode) ModSystem.Logger.Notification(Lang.Get($"{ModSystem.ModId}:debug-rideable-init", entity.EntityId));
 
-            api = entity.Api;
             capi = api as ICoreClientAPI;
 
             // Order of operations matters
