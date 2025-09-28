@@ -54,13 +54,10 @@ namespace Jaunt.Behaviors
         #region Protected
 
         protected static JauntModSystem ModSystem => JauntModSystem.Instance;
-        protected long lastGaitChangeMs = 0;
         protected long mountedTotalMs = 0;
         protected float timeSinceLastLog = 0;
-        protected float timeSinceLastGaitCheck = 0;
-        protected float timeSinceLastGaitFatigue = 0;
 
-        protected FastSmallDictionary<string, JauntControlMeta> Controls;
+        protected FastSmallDictionary<string, JauntControlMeta> JauntControls;
         protected string[] FlyableGaitOrderCodes; // List of gait codes in order of increasing speed for the flyable entity
 
         protected EntityBehaviorJauntStamina ebs;
@@ -110,11 +107,11 @@ namespace Jaunt.Behaviors
                 saddleBreakGaitCode = attributes["saddleBreakGait"].AsString();
             }
 
-            Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
+            JauntControls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
             FlyableGaitOrderCodes = attributes["flyableGaitOrder"].AsArray<string>();
 
-            foreach (var val in Controls.Values) val.RiderAnim?.Init();
+            foreach (var val in JauntControls.Values) val.RiderAnim?.Init();
 
             capi?.Event.RegisterRenderer(this, EnumRenderStage.Before, "rideablesim");
         }
@@ -147,8 +144,8 @@ namespace Jaunt.Behaviors
                 eagent.Controls.IsFlying = true;
             }
 
-            if (eagent.Controls.IsFlying && Controls.TryGetValue(ebg.IdleFlyingJauntGait.Code, out var control)
-                || Controls.TryGetValue(ebg.IdleGait.Code, out control))
+            if (eagent.Controls.IsFlying && JauntControls.TryGetValue(ebg.IdleFlyingJauntGait.Code, out var control)
+                || JauntControls.TryGetValue(ebg.IdleGait.Code, out control))
             {
                 curAnim = control.RiderAnim;
             }
@@ -613,7 +610,7 @@ namespace Jaunt.Behaviors
             // This is called when jump ends
             if (wasMidJump && !IsInMidJump)
             {
-                var meta = Controls["jump"];
+                var meta = JauntControls["jump"];
                 foreach (var seat in Seats) seat.Passenger?.AnimManager?.StopAnimation(meta.RiderAnim.Animation);
                 eagent.AnimManager.StopAnimation(meta.Animation);
             }
@@ -700,29 +697,29 @@ namespace Jaunt.Behaviors
                 // Idle states for each environment
                 if (eagent.Swimming)
                 {
-                    curAnim = Controls[ebg.IdleSwimmingJauntGait.Code].RiderAnim;
-                    nowControlMeta = Controls[ebg.IdleSwimmingJauntGait.Code];
+                    curAnim = JauntControls[ebg.IdleSwimmingJauntGait.Code].RiderAnim;
+                    nowControlMeta = JauntControls[ebg.IdleSwimmingJauntGait.Code];
                 }
                 else if (eagent.Controls.IsFlying)
                 {
-                    curAnim = Controls[ebg.IdleFlyingJauntGait.Code].RiderAnim;
-                    nowControlMeta = Controls[ebg.IdleFlyingJauntGait.Code];
+                    curAnim = JauntControls[ebg.IdleFlyingJauntGait.Code].RiderAnim;
+                    nowControlMeta = JauntControls[ebg.IdleFlyingJauntGait.Code];
                 }
                 else
                 {
-                    curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
+                    curAnim = JauntControls[ebg.IdleGait.Code].RiderAnim;
                     nowControlMeta = null;
                 }
             }
             else
             {
-                nowControlMeta = Controls.FirstOrDefault(c => c.Key == ebg.CurrentJauntGait.Code).Value;
+                nowControlMeta = JauntControls.FirstOrDefault(c => c.Key == ebg.CurrentJauntGait.Code).Value;
 
                 eagent.Controls.Jump = jumpNow;
 
                 if (jumpNow)
                 {
-                    if (api.World.Rand.NextDouble() < 0.5 && RemainingSaddleBreaks > 0 && Controls.TryGetValue("buck", out JauntControlMeta value))
+                    if (api.World.Rand.NextDouble() < 0.5 && RemainingSaddleBreaks > 0 && JauntControls.TryGetValue("buck", out JauntControlMeta value))
                     {
                         jumpNow = false;
                         nowControlMeta = value;
@@ -740,7 +737,7 @@ namespace Jaunt.Behaviors
                         if (eagent.Properties.Client.Renderer is EntityShapeRenderer esr)
                             esr.LastJumpMs = capi.InWorldEllapsedMilliseconds;
 
-                        nowControlMeta = Controls["jump"];
+                        nowControlMeta = JauntControls["jump"];
                         if (ForwardSpeed != 0) nowControlMeta.EaseOutSpeed = 30;
 
                         foreach (var seat in Seats) seat.Passenger?.AnimManager?.StartAnimation(nowControlMeta.RiderAnim);
@@ -785,7 +782,7 @@ namespace Jaunt.Behaviors
 
             gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            if (Controls.ContainsKey(ebg.CurrentGait.Code))
+            if (JauntControls.ContainsKey(ebg.CurrentGait.Code))
             {
                 var gaitMeta = ebg.CurrentGait;
 
@@ -879,12 +876,12 @@ namespace Jaunt.Behaviors
             }
             if (eagent.Controls.IsFlying)
             {
-                eagent.StartAnimation(Controls[ebg.IdleFlyingJauntGait.Code].Animation);
-                curControlMeta = Controls[ebg.IdleFlyingJauntGait.Code];
+                eagent.StartAnimation(JauntControls[ebg.IdleFlyingJauntGait.Code].Animation);
+                curControlMeta = JauntControls[ebg.IdleFlyingJauntGait.Code];
             }
             else
             {
-                eagent.StartAnimation(Controls[ebg.IdleGait.Code].Animation);
+                eagent.StartAnimation(JauntControls[ebg.IdleGait.Code].Animation);
                 curControlMeta = null;
             }
         }
@@ -908,12 +905,12 @@ namespace Jaunt.Behaviors
             api.World.SpawnEntity(entitytamed);
         }
 
-        public new void DidUnnmount(EntityAgent entityAgent)
+        public new void DidUnmount(EntityAgent entityAgent)
         {
             Stop();
 
             LastDismountTotalHours = entity.World.Calendar.TotalHours;
-            foreach (var meta in Controls.Values)
+            foreach (var meta in JauntControls.Values)
             {
                 if (meta.RiderAnim?.Animation != null)
                 {
@@ -923,7 +920,7 @@ namespace Jaunt.Behaviors
 
             if (eagent.Swimming)
             {
-                eagent.StartAnimation(Controls[ebg.IdleSwimmingJauntGait.Code].Animation);
+                eagent.StartAnimation(JauntControls[ebg.IdleSwimmingJauntGait.Code].Animation);
             }
         }
 
