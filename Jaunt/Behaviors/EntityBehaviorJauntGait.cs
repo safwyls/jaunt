@@ -126,11 +126,11 @@ namespace Jaunt.Behaviors
 
             CurrentGait = CurrentEnv switch
             {
-                EnumHabitat.Land => IdleJauntGait,
+                EnumHabitat.Land => IdleGait,
                 EnumHabitat.Air => IdleFlyingJauntGait,
                 EnumHabitat.Sea => IdleSwimmingJauntGait,
                 EnumHabitat.Underwater => IdleSwimmingJauntGait,
-                _ => IdleJauntGait
+                _ => IdleGait
             };
 
         }
@@ -145,11 +145,11 @@ namespace Jaunt.Behaviors
             ? CurrentJauntGait == IdleFlyingJauntGait
             : eagent.Swimming && IdleSwimmingJauntGait != null
                 ? CurrentJauntGait == IdleSwimmingJauntGait
-                : CurrentJauntGait == IdleJauntGait;
+                : CurrentJauntGait == IdleGait;
 
         public void SetIdle(bool forceGround)
         {
-            CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleJauntGait;
+            CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleGait;
             if (forceGround) eagent.Controls.IsFlying = false;
         }
         public void ApplyGaitFatigue(float dt)

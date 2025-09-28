@@ -176,7 +176,7 @@ namespace Jaunt.Behaviors
             SaddleBreakGait = ebg?.JauntGaits.FirstOrDefault(g => g.Value.Code == saddleBreakGaitCode).Value;
 
             if (eagent.Controls.IsFlying && Controls.TryGetValue(ebg.IdleFlyingJauntGait.Code, out var control)
-                || Controls.TryGetValue(ebg.IdleJauntGait.Code, out control))
+                || Controls.TryGetValue(ebg.IdleGait.Code, out control))
             {
                 curAnim = control.RiderAnim;
             }
@@ -759,7 +759,7 @@ namespace Jaunt.Behaviors
                 }
                 else
                 {
-                    curAnim = Controls[ebg.IdleJauntGait.Code].RiderAnim;
+                    curAnim = Controls[ebg.IdleGait.Code].RiderAnim;
                     nowControlMeta = null;
                 }
             }
@@ -933,7 +933,7 @@ namespace Jaunt.Behaviors
             }
             else
             {
-                eagent.StartAnimation(Controls[ebg.IdleJauntGait.Code].Animation);
+                eagent.StartAnimation(Controls[ebg.IdleGait.Code].Animation);
                 curControlMeta = null;
             }
         }
