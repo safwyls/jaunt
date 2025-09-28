@@ -51,7 +51,6 @@ namespace Jaunt.Behaviors
         EntityAgent eagent => entity as EntityAgent;
         protected ICoreClientAPI capi;
         protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
-        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
 
         public EntityBehaviorJauntGait(Entity entity) : base(entity)
