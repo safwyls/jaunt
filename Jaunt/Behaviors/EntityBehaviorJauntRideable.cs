@@ -266,8 +266,8 @@ namespace Jaunt.Behaviors
 
         #region Motion Systems
 
-        public void SpeedUp() => SetNextGait(true);
-        public void SlowDown() => SetNextGait(false);
+        public new void SpeedUp() => SetNextGait(true);
+        public new void SlowDown() => SetNextGait(false);
 
         /// <summary>
         /// Finds the appropriate gait for the entity based on the current gait and transition type.
@@ -303,7 +303,7 @@ namespace Jaunt.Behaviors
             }
         }
 
-        public JauntGaitMeta GetNextGait(bool forward = true, EnumHabitat? nextEnv = null, JauntGaitMeta currentJauntGait = null)
+        public new GaitMeta GetNextGait(bool forward = true, EnumHabitat? nextEnv = null, JauntGaitMeta currentJauntGait = null)
         {
             currentJauntGait ??= ebg.CurrentJauntGait;
 
@@ -311,7 +311,7 @@ namespace Jaunt.Behaviors
             if (nextEnv != null) return TranslateGait(currentJauntGait, nextEnv);
 
             // Eventually this should be changed to allow for more advanced swimming gaits
-            if (eagent.Swimming) return forward ? (JauntGaitMeta)ebg.Gaits["swim"] : (JauntGaitMeta)ebg.Gaits["swimback"];
+            if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
 
             if (eagent.Controls.IsFlying)
             {
@@ -345,15 +345,15 @@ namespace Jaunt.Behaviors
             }
             else
             {
-                return ebg.IdleJauntGait;
+                return ebg.IdleGait;
             }
         }
 
-        public void SetNextGait(bool forward, EnumHabitat? nextEnv = null, JauntGaitMeta nextJauntGait = null)
+        public new void SetNextGait(bool forward, EnumHabitat? nextEnv = null, GaitMeta nextGait = null)
         {
-            nextJauntGait ??= GetNextGait(forward, nextEnv);
-            if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextJauntGait.Code}");
-            ebg.CurrentGait = nextJauntGait;
+            nextGait ??= GetNextGait(forward, nextEnv);
+            if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
+            ebg.CurrentGait = nextGait;
         }
 
         public void AirToGround()
