@@ -33,9 +33,8 @@ namespace Jaunt.Behaviors
             return AttributeKey;
         }
 
-        public readonly FastSmallDictionary<string, JauntGaitMeta> JauntGaits = new(1);
         private ITreeAttribute gaitTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
-        public JauntGaitMeta CurrentJauntGait => JauntGaits[entity.WatchedAttributes.GetString("currentgait")];
+        public JauntGaitMeta CurrentJauntGait => (JauntGaitMeta)CurrentGait;
 
         public EnumHabitat CurrentEnv => CurrentJauntGait.Environment;
 
@@ -77,7 +76,6 @@ namespace Jaunt.Behaviors
             foreach (var gait in gaitarray)
             {
                 Gaits[gait.Code] = gait;
-                JauntGaits[gait.Code] = gait;
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
                 gait.Sound?.WithPathPrefixOnce("sounds/");
 
@@ -106,8 +104,8 @@ namespace Jaunt.Behaviors
             string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
             string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
             EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
-            IdleFlyingJauntGait = JauntGaits[idleFlyingGaitCode];
-            IdleSwimmingJauntGait = JauntGaits[idleSwimmingGaitCode];
+            IdleFlyingJauntGait = (JauntGaitMeta)Gaits[idleFlyingGaitCode];
+            IdleSwimmingJauntGait = (JauntGaitMeta)Gaits[idleSwimmingGaitCode];
 
             CurrentGait = CurrentEnv switch
             {
