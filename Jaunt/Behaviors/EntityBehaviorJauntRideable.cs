@@ -155,7 +155,7 @@ namespace Jaunt.Behaviors
 
             foreach (var str in GaitOrderCodes)
             {
-                var gait = ebg?.Gaits[str];
+                var gait = ebg?.JauntGaits[str];
                 if (gait != null) RideableGaitOrder.Add(gait);
             }
 
@@ -163,7 +163,7 @@ namespace Jaunt.Behaviors
             {
                 foreach (var str in FlyableGaitOrderCodes)
                 {
-                    var gait = ebg?.Gaits[str];
+                    var gait = ebg?.JauntGaits[str];
                     if (gait != null) FlyableGaitOrder.Add(gait);
                 }
             }
@@ -173,7 +173,7 @@ namespace Jaunt.Behaviors
                 eagent.Controls.IsFlying = true;
             }
 
-            SaddleBreakGait = ebg?.Gaits.FirstOrDefault(g => g.Value.Code == saddleBreakGaitCode).Value;
+            SaddleBreakGait = ebg?.JauntGaits.FirstOrDefault(g => g.Value.Code == saddleBreakGaitCode).Value;
 
             if (eagent.Controls.IsFlying && Controls.TryGetValue(ebg.IdleFlyingJauntGait.Code, out var control)
                 || Controls.TryGetValue(ebg.IdleJauntGait.Code, out control))
@@ -309,7 +309,7 @@ namespace Jaunt.Behaviors
             if (nextEnv != null) return TranslateGait(currentJauntGait, nextEnv);
 
             // Eventually this should be changed to allow for more advanced swimming gaits
-            if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
+            if (eagent.Swimming) return forward ? ebg.JauntGaits["swim"] : ebg.JauntGaits["swimback"];
 
             if (eagent.Controls.IsFlying)
             {
@@ -670,11 +670,11 @@ namespace Jaunt.Behaviors
             // Handle transition from swimming to walking
             if (eagent.Swimming)
             {
-                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
+                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.JauntGaits["swim"] : ebg.JauntGaits["swimback"];
             }
             else if (!eagent.Swimming && wasSwimming)
             {
-                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.Gaits["walk"] : ebg.Gaits["walkback"];
+                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.JauntGaits["walk"] : ebg.JauntGaits["walkback"];
             }
 
             wasSwimming = eagent.Swimming;

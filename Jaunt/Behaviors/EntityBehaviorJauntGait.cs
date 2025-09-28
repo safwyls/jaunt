@@ -33,11 +33,11 @@ namespace Jaunt.Behaviors
             return AttributeKey;
         }
 
-        public readonly FastSmallDictionary<string, JauntGaitMeta> Gaits = new(1);
+        public readonly FastSmallDictionary<string, JauntGaitMeta> JauntGaits = new(1);
         private ITreeAttribute gaitTree => entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
         public JauntGaitMeta CurrentJauntGait
         {
-            get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
+            get => JauntGaits[entity.WatchedAttributes.GetString("currentgait")];
         }
 
         public EnumHabitat CurrentEnv => CurrentJauntGait.Environment;
@@ -49,7 +49,7 @@ namespace Jaunt.Behaviors
         public double FlyingDragFactor;
         public double SwimmingDragFactor;
         public double GroundDragFactor;
-        public JauntGaitMeta FallbackJauntGait => CurrentJauntGait.FallbackGaitCode is null ? IdleJauntGait : Gaits[CurrentJauntGait.FallbackGaitCode];
+        public JauntGaitMeta FallbackJauntGait => CurrentJauntGait.FallbackGaitCode is null ? IdleJauntGait : JauntGaits[CurrentJauntGait.FallbackGaitCode];
         public JauntGaitMeta CascadingFallbackGait(int n)
         {
             var result = CurrentJauntGait;
@@ -57,7 +57,7 @@ namespace Jaunt.Behaviors
             while (n > 0)
             {
                 if (result.FallbackGaitCode is null) return IdleJauntGait;
-                result = Gaits[result.FallbackGaitCode];
+                result = JauntGaits[result.FallbackGaitCode];
                 n--;
             }
 
@@ -96,7 +96,7 @@ namespace Jaunt.Behaviors
             var gaitarray = attributes["gaits"].AsArray<JauntGaitMeta>();
             foreach (var gait in gaitarray)
             {
-                Gaits[gait.Code] = gait;
+                JauntGaits[gait.Code] = gait;
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
                 gait.Sound?.WithPathPrefixOnce("sounds/");
 
@@ -126,9 +126,9 @@ namespace Jaunt.Behaviors
             string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
             string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
             EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
-            IdleJauntGait = Gaits[idleGaitCode];
-            IdleFlyingJauntGait = Gaits[idleFlyingGaitCode];
-            IdleSwimmingJauntGait = Gaits[idleSwimmingGaitCode];
+            IdleJauntGait = JauntGaits[idleGaitCode];
+            IdleFlyingJauntGait = JauntGaits[idleFlyingGaitCode];
+            IdleSwimmingJauntGait = JauntGaits[idleSwimmingGaitCode];
 
             // 4. Initialize gait tree
             var gaitTree = entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
@@ -138,7 +138,7 @@ namespace Jaunt.Behaviors
                 entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
 
                 // These only get set on new initializations, not on reloads
-                CurrentGait = Gaits[attributes["currentgait"].AsString(idleGaitCode)];
+                CurrentGait = JauntGaits[attributes["currentgait"].AsString(idleGaitCode)];
                 MarkDirty();
             }
 
