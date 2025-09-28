@@ -46,7 +46,6 @@ namespace Jaunt.Behaviors
         public double FlyingDragFactor;
         public double SwimmingDragFactor;
         public double GroundDragFactor;
-        public JauntGaitMeta FallbackJauntGait => CurrentJauntGait.FallbackGaitCode is null ? IdleJauntGait : JauntGaits[CurrentJauntGait.FallbackGaitCode];
 
         float timeSinceLastGaitFatigue = 0f;
         EntityAgent eagent => entity as EntityAgent;

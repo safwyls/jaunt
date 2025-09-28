@@ -1016,7 +1016,7 @@ namespace Jaunt.Behaviors
 
                 if (isTired)
                 {
-                    ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackJauntGait;
+                    ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.CascadingFallbackGait(1);
                 }
             }
 
