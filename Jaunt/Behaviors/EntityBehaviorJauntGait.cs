@@ -40,26 +40,13 @@ namespace Jaunt.Behaviors
         public EnumHabitat CurrentEnv => CurrentJauntGait.Environment;
 
         public bool EnableDamageHandler = false;
-        public JauntGaitMeta IdleJauntGait;
+        public JauntGaitMeta IdleJauntGait => (JauntGaitMeta)IdleGait;
         public JauntGaitMeta IdleFlyingJauntGait;
         public JauntGaitMeta IdleSwimmingJauntGait;
         public double FlyingDragFactor;
         public double SwimmingDragFactor;
         public double GroundDragFactor;
         public JauntGaitMeta FallbackJauntGait => CurrentJauntGait.FallbackGaitCode is null ? IdleJauntGait : JauntGaits[CurrentJauntGait.FallbackGaitCode];
-        public JauntGaitMeta CascadingFallbackGait(int n)
-        {
-            var result = CurrentJauntGait;
-
-            while (n > 0)
-            {
-                if (result.FallbackGaitCode is null) return IdleJauntGait;
-                result = JauntGaits[result.FallbackGaitCode];
-                n--;
-            }
-
-            return result;
-        }
 
         float timeSinceLastGaitFatigue = 0f;
         EntityAgent eagent => entity as EntityAgent;
@@ -124,7 +111,6 @@ namespace Jaunt.Behaviors
             string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
             string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
             EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
-            IdleJauntGait = JauntGaits[idleGaitCode];
             IdleFlyingJauntGait = JauntGaits[idleFlyingGaitCode];
             IdleSwimmingJauntGait = JauntGaits[idleSwimmingGaitCode];
 
