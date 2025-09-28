@@ -351,7 +351,7 @@ namespace Jaunt.Behaviors
         {
             nextJauntGait ??= GetNextGait(forward, nextEnv);
             if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextJauntGait.Code}");
-            ebg.CurrentJauntGait = nextJauntGait;
+            ebg.CurrentGait = nextJauntGait;
         }
 
         public void AirToGround()
@@ -670,11 +670,11 @@ namespace Jaunt.Behaviors
             // Handle transition from swimming to walking
             if (eagent.Swimming)
             {
-                ebg.CurrentJauntGait = ForwardSpeed > 0 ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
+                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
             }
             else if (!eagent.Swimming && wasSwimming)
             {
-                ebg.CurrentJauntGait = ForwardSpeed > 0 ? ebg.Gaits["walk"] : ebg.Gaits["walkback"];
+                ebg.CurrentGait = ForwardSpeed > 0 ? ebg.Gaits["walk"] : ebg.Gaits["walkback"];
             }
 
             wasSwimming = eagent.Swimming;
@@ -1016,7 +1016,7 @@ namespace Jaunt.Behaviors
 
                 if (isTired)
                 {
-                    ebg.CurrentJauntGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackJauntGait;
+                    ebg.CurrentGait = ebs.Stamina < 10 ? ebg.CascadingFallbackGait(2) : ebg.FallbackJauntGait;
                 }
             }
 

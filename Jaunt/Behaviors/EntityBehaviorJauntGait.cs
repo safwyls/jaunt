@@ -38,11 +38,6 @@ namespace Jaunt.Behaviors
         public JauntGaitMeta CurrentJauntGait
         {
             get => Gaits[entity.WatchedAttributes.GetString("currentgait")];
-            set
-            {
-                entity.WatchedAttributes.SetString("currentgait", value.Code);
-                MarkDirty();
-            }
         }
 
         public EnumHabitat CurrentEnv => CurrentJauntGait.Environment;
@@ -143,11 +138,11 @@ namespace Jaunt.Behaviors
                 entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
 
                 // These only get set on new initializations, not on reloads
-                CurrentJauntGait = Gaits[attributes["currentgait"].AsString(idleGaitCode)];
+                CurrentGait = Gaits[attributes["currentgait"].AsString(idleGaitCode)];
                 MarkDirty();
             }
 
-            CurrentJauntGait = CurrentEnv switch
+            CurrentGait = CurrentEnv switch
             {
                 EnumHabitat.Land => IdleJauntGait,
                 EnumHabitat.Air => IdleFlyingJauntGait,
@@ -175,7 +170,7 @@ namespace Jaunt.Behaviors
 
         public void SetIdle(bool forceGround)
         {
-            CurrentJauntGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleJauntGait;
+            CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleJauntGait;
             if (forceGround) eagent.Controls.IsFlying = false;
         }
         public void ApplyGaitFatigue(float dt)
