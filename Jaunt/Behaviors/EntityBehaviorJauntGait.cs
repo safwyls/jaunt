@@ -147,9 +147,6 @@ namespace Jaunt.Behaviors
                 ? CurrentJauntGait == IdleSwimmingJauntGait
                 : CurrentJauntGait == IdleJauntGait;
 
-        public bool IsBackward => CurrentJauntGait.Backwards || CurrentJauntGait.MoveSpeed < 0f;
-        public bool IsForward => !CurrentJauntGait.Backwards && CurrentJauntGait != IdleJauntGait;
-
         public void SetIdle(bool forceGround)
         {
             CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleJauntGait;
