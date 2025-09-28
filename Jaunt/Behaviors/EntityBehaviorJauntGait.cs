@@ -125,10 +125,10 @@ namespace Jaunt.Behaviors
         }
 
         public bool IsIdle => eagent.Controls.IsFlying
-            ? CurrentJauntGait == IdleFlyingJauntGait
+            ? CurrentGait == IdleFlyingJauntGait
             : eagent.Swimming && IdleSwimmingJauntGait != null
-                ? CurrentJauntGait == IdleSwimmingJauntGait
-                : CurrentJauntGait == IdleGait;
+                ? CurrentGait == IdleSwimmingJauntGait
+                : CurrentGait == IdleGait;
 
         public void SetIdle(bool forceGround)
         {
