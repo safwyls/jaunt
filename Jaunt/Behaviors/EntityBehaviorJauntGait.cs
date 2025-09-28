@@ -104,24 +104,11 @@ namespace Jaunt.Behaviors
             }
 
             // 3. Set idle gaits
-            string idleGaitCode = attributes["idleGait"].AsString("idle");
             string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
             string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
             EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
             IdleFlyingJauntGait = JauntGaits[idleFlyingGaitCode];
             IdleSwimmingJauntGait = JauntGaits[idleSwimmingGaitCode];
-
-            // 4. Initialize gait tree
-            var gaitTree = entity.WatchedAttributes.GetTreeAttribute(AttributeKey);
-
-            if (gaitTree == null)
-            {
-                entity.WatchedAttributes.SetAttribute(AttributeKey, new TreeAttribute());
-
-                // These only get set on new initializations, not on reloads
-                CurrentGait = JauntGaits[attributes["currentgait"].AsString(idleGaitCode)];
-                MarkDirty();
-            }
 
             CurrentGait = CurrentEnv switch
             {
