@@ -26,26 +26,14 @@ namespace Jaunt.Behaviors
         #region Public
 
         public List<JauntGaitMeta> FlyableGaitOrder = new(); // List of gaits in order of increasing speed for the flyable entity
-        public List<JauntGaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
         public bool CanFly => FlyableGaitOrder?.Count > 0;
         public double VerticalSpeed;
-
-        public double LastDismountTotalHours {
-            get
-            {
-                return entity.WatchedAttributes.GetDouble("lastDismountTotalHours");
-            }
-            set
-            {
-                entity.WatchedAttributes.SetDouble("lastDismountTotalHours", value);
-            }
-        }
+        public int MinGeneration => minGeneration;
 
         #endregion Public
 
         #region Internal
 
-        internal int minGeneration = 0; // Minimum generation for the animal to be rideable
         internal bool prevForwardKey, prevBackwardKey, prevSprintKey;
         internal float notOnGroundAccum;
         internal string prevSoundCode;
@@ -75,14 +63,11 @@ namespace Jaunt.Behaviors
 
         protected FastSmallDictionary<string, JauntControlMeta> Controls;
         protected string[] FlyableGaitOrderCodes; // List of gait codes in order of increasing speed for the flyable entity
-        protected string[] GaitOrderCodes; // List of gait codes in order of increasing speed for the rideable entity
 
         protected EntityBehaviorJauntStamina ebs;
         protected EntityBehaviorJauntGait ebg;
         protected EntityBehaviorHealth ebh;
 
-        protected JauntGaitMeta SaddleBreakGait;
-        protected string saddleBreakGaitCode;
         protected float angularMotionWild = 1/10f;
         protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
         protected static string AttributeKey => $"{ModSystem.ModId}:rideable";
@@ -105,8 +90,7 @@ namespace Jaunt.Behaviors
 
         public override void Initialize(EntityProperties properties, JsonObject attributes)
         {
-            api = entity.Api;
-            capi = api as ICoreClientAPI;
+            base.Initialize(properties, attributes);
 
             capi?.Input.RegisterHotKey($"{ModSystem.ModId}:dive", Lang.Get("Flying Mount Dive"), GlKeys.F, HotkeyType.CharacterControls);
             capi?.Input.SetHotKeyHandler($"{ModSystem.ModId}:dive", OnHotkeyDive);
@@ -114,8 +98,6 @@ namespace Jaunt.Behaviors
             capi?.Input.SetHotKeyHandler($"{ModSystem.ModId}:attack", OnHotkeyAttack);
 
             if (DebugMode) ModSystem.Logger.Notification(Lang.Get($"{ModSystem.ModId}:debug-rideable-init", entity.EntityId));
-
-            base.Initialize(properties, attributes);
 
             if (attributes["saddleBreaksRequired"].Exists)
             {
@@ -131,7 +113,6 @@ namespace Jaunt.Behaviors
 
             Controls = attributes["controls"].AsObject<FastSmallDictionary<string, JauntControlMeta>>();
             minGeneration = attributes["minGeneration"].AsInt(0);
-            GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
             FlyableGaitOrderCodes = attributes["flyableGaitOrder"].AsArray<string>();
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
@@ -153,12 +134,6 @@ namespace Jaunt.Behaviors
                 throw new Exception("EntityBehaviorGait not found on rideable entity. Ensure it is properly registered in the entity's properties.");
             }
 
-            foreach (var str in GaitOrderCodes)
-            {
-                var gait = ebg?.Gaits[str] as JauntGaitMeta;
-                if (gait != null) RideableGaitOrder.Add(gait);
-            }
-
             if (FlyableGaitOrderCodes is not null && FlyableGaitOrderCodes.Length > 0)
             {
                 foreach (var str in FlyableGaitOrderCodes)
@@ -172,10 +147,6 @@ namespace Jaunt.Behaviors
             {
                 eagent.Controls.IsFlying = true;
             }
-
-            GaitMeta saddleBreakGait = null;
-            ebg?.Gaits.TryGetValue(saddleBreakGaitCode, out saddleBreakGait);
-            SaddleBreakGait = saddleBreakGait as JauntGaitMeta;
 
             if (eagent.Controls.IsFlying && Controls.TryGetValue(ebg.IdleFlyingJauntGait.Code, out var control)
                 || Controls.TryGetValue(ebg.IdleGait.Code, out control))
@@ -276,12 +247,12 @@ namespace Jaunt.Behaviors
         /// <param name="jauntGait"></param>
         /// <param name="transition"></param>
         /// <returns></returns>
-        public JauntGaitMeta TranslateGait(JauntGaitMeta jauntGait, EnumHabitat? nextEnv)
+        public GaitMeta TranslateGait(JauntGaitMeta jauntGait, EnumHabitat? nextEnv)
         {
             switch (nextEnv)
             {
                 case EnumHabitat.Land:
-                    if (ebg.IsIdle) return ebg.IdleJauntGait;
+                    if (ebg.IsIdle) return ebg.IdleGait;
                     return RideableGaitOrder.FirstOrDefault(g =>
                         g.MoveSpeed >= jauntGait.MoveSpeed
                         && g.Backwards == jauntGait.Backwards)
@@ -986,13 +957,13 @@ namespace Jaunt.Behaviors
             ebg?.SetIdle(entityAgent.OnGround);
         }
 
-        public JauntGaitMeta GetFirstForwardGait()
+        public GaitMeta GetFirstForwardGait()
         {
             if (RideableGaitOrder == null || RideableGaitOrder.Count == 0)
-                return ebg.IdleJauntGait;
+                return ebg.IdleGait;
 
             // Find the first forward gait (not backwards and with positive move speed)
-            return RideableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleJauntGait;
+            return RideableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleGait;
         }
 
         public JauntGaitMeta GetFirstForwardFlyingGait()

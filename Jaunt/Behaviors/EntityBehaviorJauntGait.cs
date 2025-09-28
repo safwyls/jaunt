@@ -39,7 +39,6 @@ namespace Jaunt.Behaviors
         public EnumHabitat CurrentEnv => CurrentJauntGait.Environment;
 
         public bool EnableDamageHandler = false;
-        public JauntGaitMeta IdleJauntGait => (JauntGaitMeta)IdleGait;
         public JauntGaitMeta IdleFlyingJauntGait;
         public JauntGaitMeta IdleSwimmingJauntGait;
         public double FlyingDragFactor;

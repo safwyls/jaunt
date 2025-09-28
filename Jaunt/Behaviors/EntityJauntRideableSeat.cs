@@ -18,7 +18,7 @@ namespace Jaunt.Behaviors
             if (entityAgent is not EntityPlayer player) return false;
 
             var ebr = Entity.GetBehavior<EntityBehaviorJauntRideable>();
-            if (Entity.WatchedAttributes.GetInt("generation") < ebr.minGeneration && player.Player.WorldData.CurrentGameMode != EnumGameMode.Creative)
+            if (Entity.WatchedAttributes.GetInt("generation") < ebr.MinGeneration && player.Player.WorldData.CurrentGameMode != EnumGameMode.Creative)
             {
                 var capi = entityAgent.World.Api as ICoreClientAPI;
                 capi?.TriggerIngameError(this, "toowild", Lang.Get("jaunt:ingame-error-too-wild"));
