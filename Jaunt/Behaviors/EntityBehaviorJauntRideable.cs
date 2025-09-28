@@ -16,7 +16,11 @@ namespace Jaunt.Behaviors
 {
     public class JauntControlMeta : ControlMeta
     {
-        public float MoveSpeedMultiplier { get; set; } = 0.7f; // Multiplier for the movement speed of the control
+        // TODO: Set this value manually in json everywhere it's needed, then delete this class
+        public JauntControlMeta()
+        {
+            MoveSpeedMultiplier = 0.7f;
+        }
     }
 
     public class EntityBehaviorJauntRideable : EntityBehaviorRideable
