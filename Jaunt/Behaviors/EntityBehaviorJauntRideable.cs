@@ -59,7 +59,6 @@ namespace Jaunt.Behaviors
         protected float timeSinceLastLog = 0;
         protected float timeSinceLastGaitCheck = 0;
         protected float timeSinceLastGaitFatigue = 0;
-        protected ILoadedSound gaitSound;
 
         protected FastSmallDictionary<string, JauntControlMeta> Controls;
         protected string[] FlyableGaitOrderCodes; // List of gait codes in order of increasing speed for the flyable entity
@@ -274,7 +273,7 @@ namespace Jaunt.Behaviors
             }
         }
 
-        public new GaitMeta GetNextGait(bool forward = true, EnumHabitat? nextEnv = null, JauntGaitMeta currentJauntGait = null)
+        public GaitMeta GetNextGait(bool forward = true, EnumHabitat? nextEnv = null, JauntGaitMeta currentJauntGait = null)
         {
             currentJauntGait ??= ebg.CurrentJauntGait;
 
@@ -320,7 +319,7 @@ namespace Jaunt.Behaviors
             }
         }
 
-        public new void SetNextGait(bool forward, EnumHabitat? nextEnv = null, GaitMeta nextGait = null)
+        public void SetNextGait(bool forward, EnumHabitat? nextEnv = null, GaitMeta nextGait = null)
         {
             nextGait ??= GetNextGait(forward, nextEnv);
             if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextGait.Code}");
@@ -529,27 +528,6 @@ namespace Jaunt.Behaviors
             }
 
             return new Vec2d(linearMotion, angularMotion);
-        }
-
-        // This isnt being called, it's going to the base class instead
-        bool wasPaused;
-        public new void OnRenderFrame(float dt, EnumRenderStage stage)
-        {
-            if (!wasPaused && capi.IsGamePaused)
-            {
-                gaitSound?.Pause();
-            }
-            if (wasPaused && !capi.IsGamePaused)
-            {
-                if (gaitSound?.IsPaused == true) gaitSound?.Start();
-            }
-
-            wasPaused = capi.IsGamePaused;
-
-            if (capi.IsGamePaused) return;
-
-
-            updateAngleAndMotion(dt);
         }
 
         protected override void updateAngleAndMotion(float dt)
@@ -807,9 +785,9 @@ namespace Jaunt.Behaviors
 
             gaitSound?.SetPosition((float)entity.Pos.X, (float)entity.Pos.Y, (float)entity.Pos.Z);
 
-            if (Controls.ContainsKey(ebg.CurrentJauntGait.Code))
+            if (Controls.ContainsKey(ebg.CurrentGait.Code))
             {
-                var gaitMeta = ebg.CurrentJauntGait;
+                var gaitMeta = ebg.CurrentGait;
 
                 curSoundCode = gaitMeta.Sound;
 
