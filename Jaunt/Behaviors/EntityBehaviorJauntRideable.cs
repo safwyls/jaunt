@@ -349,8 +349,6 @@ namespace Jaunt.Behaviors
 
         public void SetNextGait(bool forward, EnumHabitat? nextEnv = null, JauntGaitMeta nextJauntGait = null)
         {
-            if (api.Side != EnumAppSide.Server) return;
-
             nextJauntGait ??= GetNextGait(forward, nextEnv);
             if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextJauntGait.Code}");
             ebg.CurrentJauntGait = nextJauntGait;
