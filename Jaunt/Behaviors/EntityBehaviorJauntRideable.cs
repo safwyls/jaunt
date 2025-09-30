@@ -1041,7 +1041,7 @@ namespace Jaunt.Behaviors
 
             if (RemainingSaddleBreaks != null)
             { 
-                if ((capi.World.Player?.WorldData?.CurrentGameMode == EnumGameMode.Creative || capi.Settings.Bool["extendedDebugInfo"]) && RemainingSaddleBreaks > 0)
+                if (RemainingSaddleBreaks > 0)
                 {
                     infotext.AppendLine(Lang.Get("jaunt:infotext-saddlebreaks-remaining", RemainingSaddleBreaks));
                     if (api.World.Calendar.TotalDays - LastSaddleBreakTotalDays > saddleBreakDayInterval)
