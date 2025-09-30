@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
@@ -1032,6 +1033,34 @@ namespace Jaunt.Behaviors
 
             float deficit = 1f - (currentStamina / midpoint);  // 0 at midpoint, 1 at 0 stamina
             return deficit * deficit;  // Quadratic curve for gradual increase
+        }
+
+        public override void GetInfoText(StringBuilder infotext)
+        {
+            if (entity.Api is not ICoreClientAPI capi) return;
+
+            if (RemainingSaddleBreaks != null)
+            { 
+                if ((capi.World.Player?.WorldData?.CurrentGameMode == EnumGameMode.Creative || capi.Settings.Bool["extendedDebugInfo"]) && RemainingSaddleBreaks > 0)
+                {
+                    infotext.AppendLine(Lang.Get("jaunt:infotext-saddlebreaks-remaining", RemainingSaddleBreaks));
+                    if (api.World.Calendar.TotalDays - LastSaddleBreakTotalDays > saddleBreakDayInterval)
+                    { 
+                        infotext.AppendLine(Lang.Get("jaunt:infotext-saddlebreak-ready")); 
+                    }
+                    else
+                    {
+                        if ((saddleBreakDayInterval - (api.World.Calendar.TotalDays - LastSaddleBreakTotalDays)) >= 1)
+                        {
+                            infotext.AppendLine(Lang.Get("jaunt:infotext-saddlebreak-cooldown-days", Math.Round(saddleBreakDayInterval - (api.World.Calendar.TotalDays - LastSaddleBreakTotalDays), 1)));
+                        }
+                        else
+                        {
+                            infotext.AppendLine(Lang.Get("jaunt:infotext-saddlebreak-cooldown-hours", Math.Round(24 * (saddleBreakDayInterval - (api.World.Calendar.TotalDays - LastSaddleBreakTotalDays)), 1)));
+                        }
+                    }
+                }
+            }
         }
 
         #endregion Utility Methods
