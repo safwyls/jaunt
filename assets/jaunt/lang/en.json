@@ -11,10 +11,10 @@
   "infotext-stamina-sprint-fatigue": "Stamina Sprint Fatigue: {0}",
   "infotext-stamina-swim-fatigue": "Stamina Swim Fatigue: {0}",
 
-  "infotext-saddlebreaks-remaining": "Saddlebreaks Remaining: {0}",
-  "jaunt:infotext-saddlebreak-cooldown-days": "Next saddlebreak: {0} days",
-  "jaunt:infotext-saddlebreak-cooldown-hours": "Next saddlebreak: {0} hours",
-  "jaunt:infotext-saddlebreak-ready": "Ready for saddlebreak",
+  "infotext-saddlebreaks-remaining": "Saddle breaks Remaining: {0}",
+  "jaunt:infotext-saddlebreak-cooldown-days": "Next saddle break: {0} days",
+  "jaunt:infotext-saddlebreak-cooldown-hours": "Next saddle break: {0} hours",
+  "jaunt:infotext-saddlebreak-ready": "Ready for saddle break",
 
   "instrument-skill-bind": "Bind Instrument",
   "instrument-skill-play": "Play Instrument",
