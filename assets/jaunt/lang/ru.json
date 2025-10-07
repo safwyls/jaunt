@@ -1,0 +1,22 @@
+{
+  "debug-stamina-init": "[Jaunt] Инициализация поведения выносливости для сущности {0}",
+  "debug-rideable-init": "[Jaunt] Инициализация поведения езды для сущности {0}",
+
+  "ingame-error-too-wild": "Это животное слишком дикое, чтобы на нем ездить",
+  "ingame-error-no-entitysel": "Сущность не выбрана",
+  "ingame-error-disallowed-entity": "Невозможно привязать {0} к флейте, возможно они реагируют на другой инструмент?",
+  "discovery-bound-entity": "Флейта привязана к группе ездовых: {0}",
+
+  "infotext-stamina-state": "Выносливость: {0:0.##}/{1:0.##}",
+  "infotext-stamina-sprint-fatigue": "Усталость от бега: {0}",
+  "infotext-stamina-swim-fatigue": "Усталость от плавания: {0}",
+
+  "instrument-skill-bind": "Привязать инструмент",
+  "instrument-skill-play": "Играть на инструменте",
+
+  "groupcode-unbound": "Не привязан",
+
+  "instrument-descappend-unbound": "Не привязан ни к какой группе сущностей",
+  "instrument-descappend-bound": "Может быть использован для призыва {0}",
+  "item-instrument-flute": "Флейта Jaunt"
+}
