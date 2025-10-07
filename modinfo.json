@@ -6,6 +6,6 @@
     "description": "Library providing an extended rideable system with additional control patterns and stamina",
     "version": "2.1.1",
     "dependencies": {
-        "game": "1.21.0"
+        "game": "1.21.2"
     }
 }
