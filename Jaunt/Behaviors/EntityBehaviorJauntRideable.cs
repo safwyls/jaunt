@@ -1127,17 +1127,24 @@ namespace Jaunt.Behaviors
             else
             {
                 if (entity.Swimming && eagent is not null) eagent.Controls.FlyVector.Y = 0.2;
-                var dragFactor = (float)Math.Pow(ebg.CurrentJauntGait.DragFactor ?? 0, dt * 33);
-                if (eagent.Controls.IsFlying)
-                {
-                    eagent.Controls.FlyVector.Scale(dragFactor);
-                }
-                else
-                {
-                    eagent.Controls.WalkVector.Scale(dragFactor);
-                }
-            }
 
+                double baseDrag = ebg.CurrentJauntGait.DragFactor ?? 0.0; 
+                if (double.IsNaN(baseDrag) || double.IsInfinity(baseDrag)) baseDrag = 0.0;
+                baseDrag = Math.Clamp(baseDrag, 0.0, 1.0);
+
+                float exp = Math.Clamp(dt, 0f, 1f) * 33f;
+                float dragFactor = (float)Math.Pow(baseDrag, exp);
+                if (float.IsNaN(dragFactor) || float.IsInfinity(dragFactor)) dragFactor = 0f;
+
+                if (eagent.Controls.IsFlying) eagent.Controls.FlyVector.Scale(dragFactor);
+                else eagent.Controls.WalkVector.Scale(dragFactor);
+            }
+            /* ^^^ Added allowing a negative drag factor to not crash but you might wanna just..
+            Not have a negative drag factor be a thing so I recommend clamps.
+            FlyingDragFactor = Math.Clamp(FlyingDragFactor, 0.0, 1.0);
+            SwimmingDragFactor = Math.Clamp(SwimmingDragFactor, 0.0, 1.0);
+            GroundDragFactor = Math.Clamp(GroundDragFactor, 0.0, 1.0);
+            */
             UpdateSoundState(dt);
         }
 
