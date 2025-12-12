@@ -321,8 +321,7 @@ namespace Jaunt.Behaviors
 
                     // Boundary behavior
                     if (nextIndex < 0) nextIndex = 0;
-                    if (nextIndex >= FlyableGaitOrder.Count) nextIndex = currentIndex - 1;
-
+                    if (nextIndex >= FlyableGaitOrder.Count) nextIndex = FlyableGaitOrder.Count - 1;
                     return FlyableGaitOrder[nextIndex];
                 }
                 else
