@@ -118,9 +118,10 @@ namespace Jaunt.Behaviors
 
             base.Initialize(properties, attributes);
 
+
             if (attributes["saddleBreaksRequired"].Exists)
             {
-                if (!entity.WatchedAttributes.HasAttribute("requiredSaddleBreaks") && api.Side == EnumAppSide.Server)
+                if (!entity.WatchedAttributes.HasAttribute("remainingSaddleBreaksRequired") && api.Side == EnumAppSide.Server)
                 {
                     RemainingSaddleBreaks = GameMath.RoundRandom(api.World.Rand, attributes["saddleBreaksRequired"].AsObject<NatFloat>().nextFloat(1, api.World.Rand));
                 }
