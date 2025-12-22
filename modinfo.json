@@ -3,8 +3,9 @@
     "modid": "jaunt",
     "name": "Jaunt: Extended Riding System",
     "authors": ["safwyl", "sekelsta", "Shintharo12", "Freakyuser396", "dinolord919"],
+    "contributors": ["scornonthecob", "qua8ion"],
     "description": "Library providing an extended rideable system with additional control patterns and stamina",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "dependencies": {
         "game": "1.21.2"
     }
