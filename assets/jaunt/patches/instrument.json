@@ -10,5 +10,11 @@
     "op": "addmerge",
     "path": "/attributes/groupCode",
     "value": "mountableanimal"
+  },
+  {
+    "file": "game:itemtypes/utility/instrument",
+    "op": "addmerge",
+    "path": "/durability",
+    "value": 5000
   }
 ]

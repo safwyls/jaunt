@@ -120,7 +120,7 @@ namespace Jaunt.Behaviors
 
             if (attributes["saddleBreaksRequired"].Exists)
             {
-                if (!entity.WatchedAttributes.HasAttribute("requiredSaddleBreaks") && api.Side == EnumAppSide.Server)
+                if (!entity.WatchedAttributes.HasAttribute("remainingSaddleBreaksRequired") && api.Side == EnumAppSide.Server)
                 {
                     RemainingSaddleBreaks = GameMath.RoundRandom(api.World.Rand, attributes["saddleBreaksRequired"].AsObject<NatFloat>().nextFloat(1, api.World.Rand));
                 }
@@ -321,7 +321,7 @@ namespace Jaunt.Behaviors
 
                     // Boundary behavior
                     if (nextIndex < 0) nextIndex = 0;
-                    if (nextIndex >= FlyableGaitOrder.Count) nextIndex = currentIndex - 1;
+                    if (nextIndex >= FlyableGaitOrder.Count) nextIndex = FlyableGaitOrder.Count - 1;
 
                     return FlyableGaitOrder[nextIndex];
                 }
@@ -350,6 +350,8 @@ namespace Jaunt.Behaviors
 
         public void SetNextGait(bool forward, EnumHabitat? nextEnv = null, JauntGaitMeta nextJauntGait = null)
         {
+            if (api.Side == EnumAppSide.Server) return;
+
             nextJauntGait ??= GetNextGait(forward, nextEnv);
             if (DebugMode) ModSystem.Logger.Notification($"Next Gait: {nextJauntGait.Code}");
             ebg.CurrentJauntGait = nextJauntGait;
@@ -958,7 +960,7 @@ namespace Jaunt.Behaviors
             api.World.SpawnEntity(entitytamed);
         }
 
-        public new void DidUnnmount(EntityAgent entityAgent)
+        public new void DidUnmount(EntityAgent entityAgent)
         {
             Stop();
 
@@ -1005,7 +1007,7 @@ namespace Jaunt.Behaviors
 
         public void StaminaGaitCheck(float dt)
         {
-            if (api.Side != EnumAppSide.Server || ebs == null || ebg == null) return;
+            if (api.Side == EnumAppSide.Server || ebs == null || ebg == null) return;
 
             timeSinceLastGaitCheck += dt;
 
@@ -1127,15 +1129,16 @@ namespace Jaunt.Behaviors
             else
             {
                 if (entity.Swimming && eagent is not null) eagent.Controls.FlyVector.Y = 0.2;
-                var dragFactor = (float)Math.Pow(ebg.CurrentJauntGait.DragFactor ?? 0, dt * 33);
-                if (eagent.Controls.IsFlying)
-                {
-                    eagent.Controls.FlyVector.Scale(dragFactor);
-                }
-                else
-                {
-                    eagent.Controls.WalkVector.Scale(dragFactor);
-                }
+                double baseDrag = ebg.CurrentJauntGait.DragFactor ?? 0.0;
+                if (double.IsNaN(baseDrag) || double.IsInfinity(baseDrag)) baseDrag = 0.0;
+                baseDrag = Math.Clamp(baseDrag, 0.0, 1.0);
+
+                float exp = Math.Clamp(dt, 0f, 1f) * 33f;
+                float dragFactor = (float)Math.Pow(baseDrag, exp);
+                if (float.IsNaN(dragFactor) || float.IsInfinity(dragFactor)) dragFactor = 0f;
+
+                if (eagent.Controls.IsFlying) eagent.Controls.FlyVector.Scale(dragFactor);
+                else eagent.Controls.WalkVector.Scale(dragFactor);
             }
 
             UpdateSoundState(dt);

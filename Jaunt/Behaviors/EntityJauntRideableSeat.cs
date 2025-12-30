@@ -66,10 +66,10 @@ namespace Jaunt.Behaviors
             base.DidUnmount(entityAgent);
 
             var ebr = mountedEntity as IMountableListener;
-            (ebr as EntityBehaviorJauntRideable)?.DidUnnmount(entityAgent);
+            (ebr as EntityBehaviorJauntRideable)?.DidUnmount(entityAgent);
 
             ebr = Entity as IMountableListener;
-            (ebr as EntityBehaviorJauntRideable)?.DidUnnmount(entityAgent);
+            (ebr as EntityBehaviorJauntRideable)?.DidUnmount(entityAgent);
         }
 
         public void OnJauntControls(EnumEntityAction action, bool on, ref EnumHandling handled)
@@ -87,6 +87,7 @@ namespace Jaunt.Behaviors
                         {
                             (Passenger as EntityAgent)?.TryUnmount();
                             controls.StopAllMovement();
+                            handled = EnumHandling.Handled;
                         }
                     }
                 }
