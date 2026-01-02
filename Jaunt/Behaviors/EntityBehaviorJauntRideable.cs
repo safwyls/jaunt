@@ -28,6 +28,7 @@ namespace Jaunt.Behaviors
 
         public List<JauntGaitMeta> FlyableGaitOrder = new(); // List of gaits in order of increasing speed for the flyable entity
         public List<JauntGaitMeta> RideableGaitOrder = new(); // List of gaits in order of increasing speed for the rideable entity
+        public List<JauntGaitMeta> SwimmingGaitOrder = new(); // List of swimming gaits in order of increasing speed for the rideable entity
         public bool CanFly => FlyableGaitOrder?.Count > 0;
         public double VerticalSpeed;
 
@@ -77,6 +78,7 @@ namespace Jaunt.Behaviors
         protected FastSmallDictionary<string, JauntControlMeta> Controls;
         protected string[] FlyableGaitOrderCodes; // List of gait codes in order of increasing speed for the flyable entity
         protected string[] GaitOrderCodes; // List of gait codes in order of increasing speed for the rideable entity
+        protected string[] SwimmingGaitOrderCodes; // List of swimming gait codes in order of increasing speed for the rideable entity
 
         protected EntityBehaviorJauntStamina ebs;
         protected EntityBehaviorJauntGait ebg;
@@ -134,6 +136,7 @@ namespace Jaunt.Behaviors
             minGeneration = attributes["minGeneration"].AsInt(0);
             GaitOrderCodes = attributes["rideableGaitOrder"].AsArray<string>();
             FlyableGaitOrderCodes = attributes["flyableGaitOrder"].AsArray<string>();
+            SwimmingGaitOrderCodes = attributes["swimmingGaitOrder"].AsArray<string>();
 
             foreach (var val in Controls.Values) val.RiderAnim?.Init();
 
@@ -168,6 +171,13 @@ namespace Jaunt.Behaviors
                     if (gait != null) FlyableGaitOrder.Add(gait);
                 }
             }
+
+            if (SwimmingGaitOrderCodes is not null && SwimmingGaitOrderCodes.Length > 0)
+                foreach (var str in SwimmingGaitOrderCodes)
+                {
+                    var gait = ebg?.Gaits[str];
+                    if (gait != null) SwimmingGaitOrder.Add(gait);
+                }
 
             if (FlyableGaitOrder.Contains(ebg?.CurrentJauntGait))
             {
@@ -296,6 +306,13 @@ namespace Jaunt.Behaviors
                                ? FlyableGaitOrder.FirstOrDefault()
                                : FlyableGaitOrder.LastOrDefault());
                 case EnumHabitat.Sea:
+                    if (ebg.IsIdle) return ebg.IdleSwimmingJauntGait;
+                    return SwimmingGaitOrder.FirstOrDefault(g =>
+                        g.MoveSpeed >= jauntGait.MoveSpeed
+                        && g.Backwards == jauntGait.Backwards)
+                           ?? (jauntGait.Backwards
+                               ? SwimmingGaitOrder.FirstOrDefault()
+                               : SwimmingGaitOrder.LastOrDefault());
                 case EnumHabitat.Underwater:
                 default:
                     return jauntGait;
@@ -309,14 +326,31 @@ namespace Jaunt.Behaviors
             // Transition gaits when landing or taking off
             if (nextEnv != null) return TranslateGait(currentJauntGait, nextEnv);
 
-            // Eventually this should be changed to allow for more advanced swimming gaits
-            if (eagent.Swimming) return forward ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
+            if (eagent.FeetInLiquid || eagent.Swimming)
+            {
+                if (SwimmingGaitOrder is not null && SwimmingGaitOrder.Count > 0 && this.IsBeingControlled())
+                {
+                    int currentIndex = Math.Abs(SwimmingGaitOrder.IndexOf(currentJauntGait));
+                    int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+
+                    // Boundary behavior
+                    if (nextIndex < 0) nextIndex = 0;
+                    if (nextIndex >= SwimmingGaitOrder.Count) nextIndex = SwimmingGaitOrder.Count - 1;
+
+                    return SwimmingGaitOrder[nextIndex];
+                }
+                else
+                {
+                    return ebg.IdleSwimmingJauntGait;
+                }
+            }
+
 
             if (eagent.Controls.IsFlying)
             {
                 if (FlyableGaitOrder is not null && FlyableGaitOrder.Count > 0 && this.IsBeingControlled())
                 {
-                    int currentIndex = FlyableGaitOrder.IndexOf(currentJauntGait);
+                    int currentIndex = Math.Abs(FlyableGaitOrder.IndexOf(currentJauntGait));
                     int nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
 
                     // Boundary behavior
@@ -362,7 +396,14 @@ namespace Jaunt.Behaviors
             entity.Pos.Roll = 0;
             eagent.Controls.IsFlying = false;
             eagent.Controls.Down = eagent.Controls.Up = false;
-            SetNextGait(true, EnumHabitat.Land);
+            if (eagent.FeetInLiquid || eagent.Swimming)
+            {
+                SetNextGait(true, EnumHabitat.Sea);
+            }
+            else
+            {
+                SetNextGait(true, EnumHabitat.Land);
+            }
             groundedTimer = entity.World.ElapsedMilliseconds;
         }
 
@@ -550,11 +591,12 @@ namespace Jaunt.Behaviors
                     float dir = controls.Left ? 1 : -1;
                     angularMotion += ebg.CurrentJauntGait.YawMultiplier * str * dir * dt;
                 }
-                if (ebg.IsForward || ebg.IsBackward)
+                if (!ebg.IsIdle)
                 {
                     float dir = ebg.IsForward ? 1 : -1;
                     linearMotion += str * dir * dt * 2f;
                 }
+                else linearMotion = 0;
                 #endregion
             }
 
@@ -671,13 +713,13 @@ namespace Jaunt.Behaviors
             }
 
             // Handle transition from swimming to walking
-            if (eagent.Swimming)
+            if (eagent.Swimming && !wasSwimming)
             {
-                ebg.CurrentJauntGait = ForwardSpeed > 0 ? ebg.Gaits["swim"] : ebg.Gaits["swimback"];
+                ebg.CurrentJauntGait = ForwardSpeed > 0 ? ebg.Gaits["swim"] : ForwardSpeed < 0 ? ebg.Gaits["swimback"] : ebg.Gaits["tread"];
             }
             else if (!eagent.Swimming && wasSwimming)
             {
-                ebg.CurrentJauntGait = ForwardSpeed > 0 ? ebg.Gaits["walk"] : ebg.Gaits["walkback"];
+                ebg.CurrentJauntGait = ForwardSpeed > 0 ? ebg.Gaits["walk"] : ForwardSpeed < 0 ? ebg.Gaits["walkback"] : ebg.Gaits["idle"];
             }
 
             wasSwimming = eagent.Swimming;
@@ -750,10 +792,10 @@ namespace Jaunt.Behaviors
                 if (curControlMeta != null) Stop();
 
                 // Idle states for each environment
-                if (eagent.Swimming)
+                if (eagent.FeetInLiquid || eagent.Swimming)
                 {
                     curAnim = Controls[ebg.IdleSwimmingJauntGait.Code].RiderAnim;
-                    nowControlMeta = Controls[ebg.IdleSwimmingJauntGait.Code];
+                    nowControlMeta = null;
                 }
                 else if (eagent.Controls.IsFlying)
                 {
@@ -910,8 +952,7 @@ namespace Jaunt.Behaviors
 
                 eagent.Pos.Motion.Y += (swimlineSubmergedness - 0.1) / 300.0;
             }
-
-            if (controls.IsFlying)
+            else if (controls.IsFlying)
             {
                 controls.FlyVector.Set(controls.WalkVector);
                 eagent.Pos.Motion.Y = VerticalSpeed;
@@ -933,6 +974,11 @@ namespace Jaunt.Behaviors
             {
                 eagent.StartAnimation(Controls[ebg.IdleFlyingJauntGait.Code].Animation);
                 curControlMeta = Controls[ebg.IdleFlyingJauntGait.Code];
+            }
+            else if (eagent.FeetInLiquid || eagent.Swimming)
+            {
+                eagent.StartAnimation(Controls[ebg.IdleSwimmingJauntGait.Code].Animation);
+                curControlMeta = Controls[ebg.IdleSwimmingJauntGait.Code];
             }
             else
             {
@@ -973,7 +1019,7 @@ namespace Jaunt.Behaviors
                 }
             }
 
-            if (eagent.Swimming)
+            if (eagent.FeetInLiquid || eagent.Swimming)
             {
                 eagent.StartAnimation(Controls[ebg.IdleSwimmingJauntGait.Code].Animation);
             }
@@ -1003,6 +1049,15 @@ namespace Jaunt.Behaviors
 
             // Find the first forward gait (not backwards and with positive move speed)
             return FlyableGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleFlyingJauntGait;
+        }
+
+        public JauntGaitMeta GetFirstForwardSwimmingGait()
+        {
+            if (SwimmingGaitOrder == null || SwimmingGaitOrder.Count == 0)
+                return ebg.IdleSwimmingJauntGait;
+
+            // Find the first forward gait (not backwards and with positive move speed)
+            return SwimmingGaitOrder.FirstOrDefault(g => !g.Backwards && g.MoveSpeed > 0) ?? ebg.IdleSwimmingJauntGait;
         }
 
         public void StaminaGaitCheck(float dt)
@@ -1128,7 +1183,21 @@ namespace Jaunt.Behaviors
             }
             else
             {
-                if (entity.Swimming && eagent is not null) eagent.Controls.FlyVector.Y = 0.2;
+                if (entity.Swimming && eagent is not null)
+                {
+                    Vec3d pos = entity.Pos.XYZ;
+                    Vec3d posAbove = new(pos.X, pos.Y + 1.0, pos.Z);
+                    Block inblock = entity.World.BlockAccessor.GetBlock(pos.AsBlockPos, BlockLayersAccess.Fluid);
+                    Block aboveblock = entity.World.BlockAccessor.GetBlock(posAbove.AsBlockPos, BlockLayersAccess.Fluid);
+                    float waterY = (int)pos.Y + inblock.LiquidLevel / 8f + (aboveblock.IsLiquid() ? 9 / 8f : 0);
+                    float bottomSubmergedness = waterY - (float)pos.Y;
+
+                    // 0 = at swim line
+                    // 1 = completely submerged
+                    float swimlineSubmergedness = GameMath.Clamp(bottomSubmergedness - ((float)entity.SwimmingOffsetY), 0, 1);
+                    swimlineSubmergedness = Math.Min(1, swimlineSubmergedness + 0.075f);
+                    eagent.Controls.FlyVector.Y = GameMath.Clamp(eagent.Controls.FlyVector.Y, 0.002f, 0.004f) * swimlineSubmergedness * 3;
+                }
                 double baseDrag = ebg.CurrentJauntGait.DragFactor ?? 0.0;
                 if (double.IsNaN(baseDrag) || double.IsInfinity(baseDrag)) baseDrag = 0.0;
                 baseDrag = Math.Clamp(baseDrag, 0.0, 1.0);
@@ -1137,8 +1206,8 @@ namespace Jaunt.Behaviors
                 float dragFactor = (float)Math.Pow(baseDrag, exp);
                 if (float.IsNaN(dragFactor) || float.IsInfinity(dragFactor)) dragFactor = 0f;
 
-                if (eagent.Controls.IsFlying) eagent.Controls.FlyVector.Scale(dragFactor);
-                else eagent.Controls.WalkVector.Scale(dragFactor);
+                eagent.Controls.FlyVector.Scale(dragFactor);
+                eagent.Controls.WalkVector.Scale(dragFactor);
             }
 
             UpdateSoundState(dt);

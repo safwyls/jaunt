@@ -114,6 +114,8 @@ namespace Jaunt.Behaviors
                         gait.DragFactor ??= FlyingDragFactor;
                         break;
                     case EnumHabitat.Sea:
+                        gait.DragFactor ??= SwimmingDragFactor;
+                        break;
                     case EnumHabitat.Underwater:
                         gait.DragFactor ??= SwimmingDragFactor;
                         break;
@@ -171,11 +173,11 @@ namespace Jaunt.Behaviors
                 : CurrentJauntGait == IdleJauntGait;
 
         public bool IsBackward => CurrentJauntGait.Backwards || CurrentJauntGait.MoveSpeed < 0f;
-        public bool IsForward => !CurrentJauntGait.Backwards && CurrentJauntGait != IdleJauntGait;
+        public bool IsForward => !CurrentJauntGait.Backwards && CurrentJauntGait != IdleJauntGait && CurrentJauntGait != IdleSwimmingJauntGait && CurrentJauntGait != IdleFlyingJauntGait;
 
         public void SetIdle(bool forceGround)
         {
-            CurrentJauntGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleJauntGait;
+            CurrentJauntGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : eagent.Swimming && IdleSwimmingJauntGait != null ? IdleSwimmingJauntGait : IdleJauntGait;
             if (forceGround) eagent.Controls.IsFlying = false;
         }
         public void ApplyGaitFatigue(float dt)
