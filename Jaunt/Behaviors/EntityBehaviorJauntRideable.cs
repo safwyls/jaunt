@@ -109,11 +109,6 @@ namespace Jaunt.Behaviors
             api = entity.Api;
             capi = api as ICoreClientAPI;
 
-            capi?.Input.RegisterHotKey($"{ModSystem.ModId}:dive", Lang.Get("Flying Mount Dive"), GlKeys.F, HotkeyType.CharacterControls);
-            capi?.Input.SetHotKeyHandler($"{ModSystem.ModId}:dive", OnHotkeyDive);
-            capi?.Input.RegisterHotKey($"{ModSystem.ModId}:attack", Lang.Get("Mount Attack"), GlKeys.G, HotkeyType.CharacterControls);
-            capi?.Input.SetHotKeyHandler($"{ModSystem.ModId}:attack", OnHotkeyAttack);
-
             if (DebugMode) ModSystem.Logger.Notification(Lang.Get($"{ModSystem.ModId}:debug-rideable-init", entity.EntityId));
 
             base.Initialize(properties, attributes);
@@ -1076,18 +1071,6 @@ namespace Jaunt.Behaviors
             if (FlyableGaitOrder.Contains(ebg.CurrentJauntGait) && ebg.EnableDamageHandler) return 0f;
 
             return damage;
-        }
-
-        public bool OnHotkeyDive(KeyCombination kcb)
-        {
-            // Do dive stuff here
-            return true;
-        }
-
-        public bool OnHotkeyAttack(KeyCombination kcb)
-        {
-            // Do attack stuff here
-            return true;
         }
 
         public override void OnGameTick(float dt)

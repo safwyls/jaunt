@@ -71,6 +71,23 @@ namespace Jaunt
                 hudIconRenderer = new HudIconRenderer(api);
                 hudIconRenderer.Initialize();
             }
+
+            capi.Input.RegisterHotKey($"{ModId}:dive", Lang.Get("Flying Mount Dive"), GlKeys.F, HotkeyType.CharacterControls);
+            capi.Input.SetHotKeyHandler($"{ModId}:dive", OnHotkeyDive);
+            capi.Input.RegisterHotKey($"{ModId}:attack", Lang.Get("Mount Attack"), GlKeys.G, HotkeyType.CharacterControls);
+            capi.Input.SetHotKeyHandler($"{ModId}:attack", OnHotkeyAttack);
+        }
+
+        public bool OnHotkeyDive(KeyCombination kcb)
+        {
+            // Do dive stuff here
+            return true;
+        }
+
+        public bool OnHotkeyAttack(KeyCombination kcb)
+        {
+            // Do attack stuff here
+            return true;
         }
 
         private void CheckAndInitializeCustomHud(float dt)
