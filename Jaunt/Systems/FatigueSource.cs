@@ -63,7 +63,7 @@ namespace Jaunt.Systems
         public Vec3d GetSourcePosition()
         {
             if (SourceEntity is not null)
-                return SourceEntity.SidedPos.XYZ;
+                return SourceEntity.Pos.XYZ;
             else
                 return _sourcePos ?? Vec3d.Zero;
         }

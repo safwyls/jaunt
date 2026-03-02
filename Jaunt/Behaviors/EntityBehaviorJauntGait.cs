@@ -11,16 +11,11 @@ using Vintagestory.GameContent;
 
 namespace Jaunt.Behaviors
 {
-    public record JauntGaitMeta : GaitMeta
+    public class JauntGaitMeta : GaitMeta
     {
-        public EnumHabitat Environment { get; set; }
-        public double? DragFactor { get; set; } = null;
-        public bool CanAscend { get; set; } = true;
-        public bool CanDescend { get; set; } = true;
         public float AscendSpeed { get; set; } = 0f;
         public float DescendSpeed { get; set; } = 0f;
         public AssetLocation IconTexture { get; set; }
-        public AnimationMetaData Anim { get; set; }
     }
 
     public class EntityBehaviorJauntGait : EntityBehaviorGait
@@ -33,22 +28,13 @@ namespace Jaunt.Behaviors
             return AttributeKey;
         }
 
-        public JauntGaitMeta CurrentJauntGait => (JauntGaitMeta)CurrentGait;
-        public EnumHabitat CurrentEnv => CurrentJauntGait.Environment;
+        public double VerticalSpeed;
+        public string currentClimbAnimation = null;
 
         public bool EnableDamageHandler = false;
-        public JauntGaitMeta IdleFlyingJauntGait;
-        public JauntGaitMeta IdleSwimmingJauntGait;
-        public double FlyingDragFactor;
-        public double SwimmingDragFactor;
-        public double GroundDragFactor;
 
         float timeSinceLastGaitFatigue = 0f;
-        EntityAgent eagent => entity as EntityAgent;
-        protected ICoreClientAPI capi;
-        protected EntityBehaviorJauntStamina ebs; // Reference to stamina behavior
-        protected EntityBehaviorJauntRideable ebr; // Reference to rideable behavior
-        protected static bool DebugMode => ModSystem.DebugMode; // Debug mode for logging
+        protected EntityBehaviorJauntStamina staminaBehavior;
 
         public EntityBehaviorJauntGait(Entity entity) : base(entity)
         {
@@ -58,18 +44,7 @@ namespace Jaunt.Behaviors
         {
             base.Initialize(properties, attributes);
 
-            if (DebugMode) ModSystem.Logger.Notification(Lang.Get($"{ModSystem.ModId}:debug-rideable-init", entity.EntityId));
-
-            capi = api as ICoreClientAPI;
-
-            // Order of operations matters
-            // 1. Get drag factors
-            FlyingDragFactor = 1 - (1 - GlobalConstants.AirDragFlying) * attributes["flyingGaitDrag"].AsFloat(1f);
-            SwimmingDragFactor = 1 - (1 - GlobalConstants.WaterDrag) * attributes["swimmingGaitDrag"].AsFloat(1f);
-            // 0.3f comes from vanilla ground drag code
-            GroundDragFactor = 1 - 0.3f * attributes["groundGaitDrag"].AsFloat(1f);
-
-            // 2. Build gait list
+            // Rebuild gait list from superclass, this time allocating JauntGaitMeta fields too
             var gaitarray = attributes["gaits"].AsArray<JauntGaitMeta>();
             foreach (var gait in gaitarray)
             {
@@ -77,88 +52,148 @@ namespace Jaunt.Behaviors
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
                 gait.Sound?.WithPathPrefixOnce("sounds/");
 
-                // First check for gait specific drag factors
-                // If missing apply environment drag factors
-                // If those aren't set they default to 1f (max drag)
-                switch (gait.Environment)
-                {
-                    case EnumHabitat.Air:
-                        gait.DragFactor ??= FlyingDragFactor;
-                        break;
-                    case EnumHabitat.Sea:
-                    case EnumHabitat.Underwater:
-                        gait.DragFactor ??= SwimmingDragFactor;
-                        break;
-                    case EnumHabitat.Land:
-                    default:
-                        gait.DragFactor ??= GroundDragFactor;
-                        break;
-                }
-
-                if (api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
+                if (entity.Api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
 
-            // 3. Set idle gaits
-            // Reset land idle - already set by superclass, but we want it of real class JauntGaitMeta
-            string idleGaitCode = attributes["idleGait"].AsString("idle");
-            string idleFlyingGaitCode = attributes["idleFlyingGait"].AsString("idle");
-            string idleSwimmingGaitCode = attributes["idleSwimmingGait"].AsString("swim");
-            EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
-            IdleGait = Gaits[idleGaitCode];
-            IdleFlyingJauntGait = (JauntGaitMeta)Gaits[idleFlyingGaitCode];
-            IdleSwimmingJauntGait = (JauntGaitMeta)Gaits[idleSwimmingGaitCode];
-
-            CurrentGait = CurrentEnv switch
+            // Shift the idle gait pointers over to those new JauntGaitMeta instances
+            foreach (EnumHabitat key in IdleGaits.Keys)
             {
-                EnumHabitat.Land => IdleGait,
-                EnumHabitat.Air => IdleFlyingJauntGait,
-                EnumHabitat.Sea => IdleSwimmingJauntGait,
-                EnumHabitat.Underwater => IdleSwimmingJauntGait,
-                _ => IdleGait
-            };
+                IdleGaits[key] = Gaits[IdleGaits[key].Code];
+            }
 
+            EnableDamageHandler = attributes["enableDamageHandler"].AsBool();
         }
 
         public override void AfterInitialized(bool onFirstSpawn)
         {
             base.AfterInitialized(onFirstSpawn);
-            ebs = entity.GetBehavior<EntityBehaviorJauntStamina>();
+            staminaBehavior = entity.GetBehavior<EntityBehaviorJauntStamina>();
+
+            EntityBehaviorHealth ebh = eagent.GetBehavior<EntityBehaviorHealth>();
+
+            if (ebh is not null)
+            {
+                ebh.onDamaged += (dmg, dmgSource) => HandleDamaged(eagent, dmg, dmgSource);
+            }
         }
 
-        public override bool IsIdleGait(GaitMeta gait)
-        {
-            return gait.Code == IdleGait.Code || gait.Code == IdleFlyingJauntGait.Code || gait.Code == IdleSwimmingJauntGait.Code;
-        }
-
-        public void SetIdle(bool forceGround)
-        {
-            CurrentGait = eagent.Controls.IsFlying && !forceGround ? IdleFlyingJauntGait : IdleGait;
-            if (forceGround) eagent.Controls.IsFlying = false;
-        }
         public void ApplyGaitFatigue(float dt)
         {
-            if (api.Side != EnumAppSide.Server || ebs == null) return;
+            if (entity.Api.Side != EnumAppSide.Server || staminaBehavior == null) return;
 
             timeSinceLastGaitFatigue += dt;
 
             if (timeSinceLastGaitFatigue >= 0.25f)
             {
-                if (CurrentJauntGait.StaminaCost > 0 && !entity.Swimming)
+                if (CurrentGait.StaminaCost > 0 && !entity.Swimming)
                 {
-                    ebs.FatigueEntity(CurrentJauntGait.StaminaCost, new FatigueSource
+                    staminaBehavior.FatigueEntity(CurrentGait.StaminaCost, new FatigueSource
                     {
                         Source = EnumFatigueSource.Mounted,
                         SourceEntity = (entity as EntityAgent)?.MountedOn?.Passenger ?? entity
                     });
+
+                    bool isTired = entity.World.Rand.NextDouble() < GetStaminaDeficitMultiplier(staminaBehavior.Stamina, staminaBehavior.MaxStamina);
+
+                    if (isTired)
+                    {
+                        CurrentGait = staminaBehavior.Stamina < 10 ? CascadingFallbackGait(2) : FallbackGait;
+                    }
                 }
             }
+        }
+
+        public static float GetStaminaDeficitMultiplier(float currentStamina, float maxStamina)
+        {
+            float midpoint = maxStamina * 0.5f;
+
+            if (currentStamina >= midpoint)
+                return 0f;
+
+            float deficit = 1f - (currentStamina / midpoint);  // 0 at midpoint, 1 at 0 stamina
+            return deficit * deficit;  // Quadratic curve for gradual increase
         }
 
         public override void OnGameTick(float dt)
         {
             base.OnGameTick(dt);
 
+            UpdateClimbAnimation();
             ApplyGaitFatigue(dt);
+        }
+
+        public override void UpdateGaitForEnvironment()
+        {
+            EnumHabitat targetEnvironment = entity.Swimming ? EnumHabitat.Sea : EnumHabitat.Land;
+            if (eagent.Controls.IsFlying || (entity.Api.Side == EnumAppSide.Server && CurrentGait.Environment == EnumHabitat.Air)) targetEnvironment = EnumHabitat.Air;
+            // No condition for underwater implemented at this time
+
+            if (CurrentGait.Environment == targetEnvironment) return;
+
+            GaitMeta? closest = null;
+            foreach (GaitMeta gait in Gaits.Values)
+            {
+                if (!gait.Natural || gait.Environment != targetEnvironment || gait.Direction != CurrentGait.Direction) continue;
+
+                if (closest == null || (Math.Abs(gait.MoveSpeed - CurrentGait.MoveSpeed) < Math.Abs(closest.MoveSpeed - CurrentGait.MoveSpeed)))
+                {
+                    closest = gait;
+                }
+            }
+
+            CurrentGait = closest;
+            entity.GetBehavior<EntityBehaviorJauntRideable>()?.OnGaitChangedForEnvironment(); // Can't invoke parent class's delegate from a subclass
+        }
+
+        protected override void Move(float dt)
+        {
+            base.Move(dt);
+
+            if (eagent.Controls.IsFlying)
+            {
+                eagent.Controls.FlyVector.Set(eagent.Controls.WalkVector);
+                eagent.Pos.Motion.Y = VerticalSpeed;
+            }
+        }
+
+        protected virtual void UpdateClimbAnimation()
+        {
+            string? nowClimbAnim = null;
+            if (eagent.Controls.IsFlying && !CurrentGait.HasBackwardMotion)
+            {
+                if (VerticalSpeed > 0.001)
+                {
+                    nowClimbAnim = "fly-up";
+                }
+                else if (VerticalSpeed < -0.001)
+                {
+                    nowClimbAnim = "fly-down";
+                }
+            }
+
+            if (nowClimbAnim != currentClimbAnimation)
+            {
+                if (currentClimbAnimation != null)
+                {
+                    eagent.StopAnimation(currentClimbAnimation);
+                    eagent.AnimManager.AnimationsDirty = true;
+                }
+                currentClimbAnimation = nowClimbAnim;
+                if (nowClimbAnim != null)
+                {
+                    eagent.StartAnimation(nowClimbAnim);
+                }
+            }
+        }
+
+        // This method is meant to mitigate fall damage if fall damage multiplier is not zero and the user has explicitly enabled the damage handler
+        public float HandleDamaged(EntityAgent eagent, float damage, DamageSource damageSource)
+        {
+            if (entity.Properties.FallDamageMultiplier == 0) return damage;
+
+            if (CurrentGait.Environment == EnumHabitat.Air && EnableDamageHandler) return 0f;
+
+            return damage;
         }
     }
 }
