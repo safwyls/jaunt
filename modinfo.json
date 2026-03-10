@@ -5,8 +5,8 @@
     "authors": ["safwyl", "sekelsta", "Shintharo12", "Freakyuser396", "dinolord919"],
     "contributors": ["scornonthecob", "qua8ion"],
     "description": "Library providing an extended rideable system with additional control patterns and stamina",
-    "version": "3.0.0-pre.1",
+    "version": "3.0.0-rc.1",
     "dependencies": {
-        "game": "1.22.0-pre.4"
+        "game": "1.22.0-rc.1"
     }
 }
