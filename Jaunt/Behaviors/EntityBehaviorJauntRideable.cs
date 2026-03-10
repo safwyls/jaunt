@@ -62,6 +62,12 @@ namespace Jaunt.Behaviors
 
         #region Motion Systems
 
+        // Returns true if on a hold control scheme, you need to be holding down the sprint key to stay at this gait
+        protected override bool IsSprinting()
+        {
+            return false;
+        }
+
         public void AirToGround()
         {
             entity.Pos.Roll = 0;
