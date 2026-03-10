@@ -18,7 +18,6 @@ namespace Jaunt.Behaviors
     public class EntityBehaviorJauntRideable : EntityBehaviorRideable
     {
         #region Properties
-        public int MinGeneration => minGeneration;
         public bool CanFlyRidden => RideableGaitOrder.ContainsKey(EnumHabitat.Air);
 
         protected long onGroundSinceMs;
