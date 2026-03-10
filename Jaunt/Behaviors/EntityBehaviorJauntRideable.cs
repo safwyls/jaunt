@@ -46,7 +46,7 @@ namespace Jaunt.Behaviors
         {
             // This is only called server side, don't try and map sneak/jump controls here
 
-            if (action == EnumEntityAction.Sneak && on && entity.OnGround)
+            if (action == EnumEntityAction.Sneak && on && (entity.OnGround || entity.Swimming))
             {
                 if (entity.World.ElapsedMilliseconds - onGroundSinceMs > 500)
                 {

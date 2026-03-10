@@ -124,8 +124,12 @@ namespace Jaunt.Behaviors
 
         public override void UpdateGaitForEnvironment()
         {
-            EnumHabitat targetEnvironment = entity.Swimming ? EnumHabitat.Sea : EnumHabitat.Land;
-            if (eagent.Controls.IsFlying || (entity.Api.Side == EnumAppSide.Server && CurrentGait.Environment == EnumHabitat.Air)) targetEnvironment = EnumHabitat.Air;
+            EnumHabitat targetEnvironment = EnumHabitat.Land;
+            if (eagent.Controls.IsFlying || (entity.Api.Side == EnumAppSide.Server && CurrentGait.Environment == EnumHabitat.Air) && !entity.OnGround)
+            {
+                targetEnvironment = EnumHabitat.Air;
+            }
+            if (entity.Swimming) targetEnvironment = EnumHabitat.Sea;
             // No condition for underwater implemented at this time
 
             if (CurrentGait.Environment == targetEnvironment) return;
