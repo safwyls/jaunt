@@ -50,7 +50,6 @@ namespace Jaunt.Behaviors
             {
                 Gaits[gait.Code] = gait;
                 gait.IconTexture?.WithPathPrefixOnce("textures/");
-                gait.Sound?.WithPathPrefixOnce("sounds/");
 
                 if (entity.Api.Side == EnumAppSide.Client) ModSystem.hudIconRenderer.RegisterTexture(gait.IconTexture);
             }
